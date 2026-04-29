@@ -1,0 +1,387 @@
+# anyIP CLI ⬡
+
+> **Manage residential & mobile proxies from your terminal** — powered by [anyIP.io](https://anyip.io) and Claude AI.
+
+---
+
+## ✨ What is this?
+
+**anyIP CLI** is a TypeScript command-line tool that puts your entire proxy infrastructure at your fingertips. Instead of clicking through a web dashboard, you can:
+
+- 🚀 **Create proxy accounts** in seconds with a single command
+- 🤖 **Describe your use case in plain English** — Claude AI builds the optimal proxy setup for you
+- 📊 **Monitor bandwidth and traffic** per account, per domain, per date range
+- 🔌 **Test proxy connectivity** live with a built-in curl checker
+- 💾 **Save and reuse proxy sessions** locally without re-fetching credentials
+- 🌐 **Launch a local web dashboard** if you prefer a GUI
+- 📖 **Read the manual in Chinese or Russian** — built-in, no API call needed
+
+---
+
+## 📦 Installation
+
+### Global install *(recommended)*
+```bash
+npm install -g anyip-cli
+anyip --help
+```
+
+### From source
+```bash
+git clone https://github.com/cpaka/anyipcli
+cd anyipcli
+npm install
+npm run build
+npm link          # makes `anyip` available globally
+```
+
+### One-off use without installing
+```bash
+npx anyip-cli <command>
+```
+
+---
+
+## ⚡ Quick Start
+
+```bash
+# 1. Save your API keys (interactive masked prompt — never stored in shell history)
+anyip config set-keys
+
+# 2. List your proxy accounts
+anyip account list
+
+# 3. Get a working proxy and test it instantly
+anyip get --residential --location US
+
+# 4. Generate a full proxy setup with AI
+anyip generate "scrape Amazon prices across 5 US cities, rotating IPs"
+```
+
+---
+
+## 🔐 Authentication
+
+### Option A — Interactive prompt *(safest — keys stay out of shell history)*
+```bash
+anyip config set-keys
+#  anyIP API key      : ************
+#  Claude API key     : ************
+```
+
+### Option B — Flags
+```bash
+anyip config set-keys --anyip YOUR_ANYIP_KEY --claude YOUR_CLAUDE_KEY
+```
+
+### Option C — Environment variables *(perfect for CI/CD)*
+```bash
+export ANYIP_API_KEY=your_anyip_key
+export ANTHROPIC_API_KEY=your_claude_key  # optional — only needed for AI commands
+```
+
+> 🟡 **Environment variables always take priority** over stored config.
+> 🟢 **Claude key is optional** — only `anyip generate` and `anyip man` (non-English) use it.
+
+```bash
+anyip config show    # view masked keys + config file path
+anyip config clear   # wipe stored config
+```
+
+---
+
+## 📡 Account Management
+
+```bash
+anyip account                        # table of all proxy accounts (indexed)
+anyip account me                     # your anyIP account info & total quota
+anyip account list                   # same as above
+anyip account list --json            # 🔧 machine-readable JSON for scripting
+anyip account inspect <id>           # full detail card for one account
+anyip account inspect <id> --json
+
+# Create with explicit options
+anyip account create \
+  --description "FR Instagram bot" \
+  --type mobile \
+  --country FR \
+  --session ig_fr_1 \
+  --quota 2147483648
+
+anyip account enable <id>
+anyip account disable <id>
+anyip account bulk-reset             # ⚠️ resets ALL quotas — asks for confirmation
+anyip account bulk-reset --yes       # skip confirmation (safe for scripts)
+```
+
+### Create options
+| Flag | Description |
+|------|-------------|
+| `-d, --description` | **Required.** Label for this account |
+| `--type` | `residential` or `mobile` |
+| `--country` | ISO code: `US`, `FR`, `DE`, `TH`… |
+| `--region` | State/region slug: `california`, `texas`… |
+| `--city` | City slug: `paris`, `dallas`… |
+| `--session` | Sticky session name (alphanumeric + `_`) |
+| `--sess-time` | Session duration in minutes (1–10080) |
+| `--quota` | Bandwidth limit in bytes (default: 1 GB) |
+| `--password` | Custom password (auto-generated if omitted) |
+
+---
+
+## 🔁 Session Management
+
+Sessions are locally cached proxy configurations. The `get` command **finds or creates** one and **verifies it live** with a curl test.
+
+```bash
+# Find / create / test in one command
+anyip get                                    # first account, mobile, SOCKS5
+anyip get --residential --location US        # US residential proxy
+anyip get --mobile --location FR            # French mobile proxy
+anyip get --residential --rotating          # rotating IP (new IP per connection)
+anyip get --residential --time 30           # sticky, 30-minute session
+anyip get --user 2                          # use proxy account #2
+anyip get --list                            # show matches without running curl
+```
+
+```bash
+# Manage saved sessions
+anyip proxy list                    # all saved sessions
+anyip proxy list --user 1           # filter by proxy account #1
+anyip proxy get <name>              # full detail card
+anyip proxy curl <name>             # print the curl test command
+anyip proxy curl <name> --run       # execute it
+anyip proxy add server:port:user:pass   # import from connection string
+anyip proxy import proxies.txt      # bulk import (one per line)
+anyip proxy delete <name>           # remove a session
+anyip proxy clear                   # wipe all sessions (asks for confirmation)
+```
+
+---
+
+## 📊 Traffic & Usage
+
+```bash
+anyip traffic list                           # recent traffic grouped by day
+anyip traffic list --from 2024-01-01         # filter by start date
+anyip traffic list --to   2024-01-31         # filter by end date
+anyip traffic list --proxy <id>              # filter by proxy account
+anyip traffic list --json                    # JSON output
+
+anyip traffic export                         # print CSV to stdout
+anyip traffic export -o traffic.csv          # save to file
+anyip traffic export --from 2024-01-01 -o jan.csv
+```
+
+---
+
+## 🌍 Geographic Reference Data
+
+Discover valid values for `--country`, `--region`, and ASN filtering:
+
+```bash
+anyip data countries                # all available countries
+anyip data countries --json
+anyip data regions US               # states/regions for US
+anyip data regions FR --json
+anyip data asn US                   # ISP/carrier ASNs for US
+```
+
+---
+
+## 🔬 Quick Proxy Test
+
+```bash
+anyip test 1     # test proxy account #1 — fetches live IP info via ip-api.com
+anyip test 3     # test account #3
+```
+
+Output shows the external IP, country, ISP, and city returned through the proxy.
+
+---
+
+## 🤖 AI Proxy Generator
+
+Describe your use case in plain English. Claude analyzes it and **automatically creates the optimal proxy setup** — choosing the right type, country, session strategy, and quota.
+
+```bash
+# Inline description
+anyip generate "scrape Amazon prices across 5 US cities, rotating IPs"
+anyip generate "10 Instagram accounts in France, keep the same IP per account"
+anyip generate "mobile proxies in Thailand for social media automation"
+
+# Interactive prompt (no args = Claude asks you)
+anyip generate
+
+# Preview the plan without creating anything
+anyip generate "SEO rank tracking across 3 countries" --dry-run
+
+# Save the credential list to a file
+anyip generate "residential US proxies for scraping" --output proxies.txt
+```
+
+### What you get
+1. **AI analysis** of your use case
+2. **Proxy plan** with count, type, country, session strategy, and quota per group
+3. **Rotation strategy** advice
+4. **Auto-creation** of all proxy accounts in parallel batches
+5. **Local session cache** — immediately usable with `anyip get` and `anyip proxy list`
+6. **Credential list** — ready-to-paste `http://user:pass@gate.anyip.io:8080` format
+
+---
+
+## 🌐 Web Dashboard
+
+Prefer a GUI? Launch a local browser interface:
+
+```bash
+anyip serve               # opens http://127.0.0.1:3000
+anyip serve --port 8080   # custom port
+```
+
+Press `Ctrl+C` to stop.
+
+**Dashboard features:**
+- 📋 Proxy account table with enable/disable toggles
+- 🤖 AI proxy generator form
+- 📈 Traffic overview
+- 💾 Session viewer
+
+---
+
+## 📖 Manual
+
+Built-in static manuals — no API call, no internet required:
+
+```bash
+anyip man                    # English
+anyip man --language zh      # 中文 (Chinese)
+anyip man --language ru      # Русский (Russian)
+anyip man --language French  # any other language — generated via Claude
+```
+
+---
+
+## 🔗 Proxy URL Format
+
+```
+http://USERNAME:PASSWORD@gate.anyip.io:8080      ← HTTP proxy
+socks5://USERNAME:PASSWORD@portal.anyip.io:1080  ← SOCKS5 proxy
+```
+
+### Embedding options in the username
+anyIP lets you pass connection options directly in the username field (comma-separated):
+
+```
+http://user_ACCOUNT,type_residential,country_US,session_my_sess:PASSWORD@gate.anyip.io:8080
+```
+
+| Attribute | Values | Description |
+|-----------|--------|-------------|
+| `user_XXXX` | account ID | proxy account identifier |
+| `type_XXX` | `residential` \| `mobile` | network type |
+| `country_XX` | ISO code | e.g. `US`, `FR`, `DE` |
+| `region_XXX` | region slug | e.g. `california` |
+| `city_XXX` | city slug | e.g. `paris` |
+| `session_NAME` | any string | sticky session label (omit = rotating) |
+| `sesstime_N` | minutes | session duration (e.g. `sesstime_30`) |
+
+---
+
+## 🛠️ Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ANYIP_API_KEY` | anyIP.io API key — overrides stored config |
+| `ANTHROPIC_API_KEY` | Claude API key — overrides stored config |
+| `NO_COLOR` | Set to any value to disable colored output |
+
+---
+
+## 💡 Tips & Best Practices
+
+### Scripting & automation
+```bash
+# Pipe JSON output to jq
+anyip account list --json | jq '.[] | {id, username, quota}'
+anyip data countries --json | jq '.[].value'
+
+# Use env vars in CI — no config file needed
+ANYIP_API_KEY=$SECRET anyip traffic list --json > metrics.json
+```
+
+### Proxy strategy guide
+| Use case | Recommended flags |
+|----------|-------------------|
+| Web scraping (stateless) | `--rotating` — new IP per request, fastest |
+| Social media accounts | `--session NAME` — one fixed IP per account |
+| SEO / rank tracking | `--residential --country XX` |
+| Mobile app testing | `--mobile --location XX` |
+| High volume scraping | `anyip generate` — auto-sizes quota and count |
+
+### Quota reference
+| Amount | Bytes |
+|--------|-------|
+| 1 GB | `1073741824` |
+| 5 GB | `5368709120` |
+| 10 GB | `10737418240` |
+| 50 GB | `53687091200` |
+
+---
+
+## 🗂️ Project Structure
+
+```
+src/
+├── index.ts              # CLI entry — wires all commands together
+├── api.ts                # anyIP.io REST API client
+├── ai.ts                 # Claude AI — plan generation & NL parsing
+├── config.ts             # Key storage (Conf) + env var fallback
+├── display.ts            # Tables, cards, colors (chalk + cli-table3)
+├── sessions.ts           # Local proxy session store
+├── serve.ts              # Local web dashboard (embedded HTML)
+├── utils.ts              # ask(), askSecret(), buildPortConfig()
+├── commands/
+│   ├── account.ts        # anyip account ...
+│   ├── config.ts         # anyip config ...
+│   ├── data.ts           # anyip data ...
+│   ├── generate.ts       # anyip generate
+│   ├── man.ts            # anyip man
+│   ├── proxy.ts          # anyip get / anyip proxy ...
+│   ├── serve.ts          # anyip serve
+│   └── traffic.ts        # anyip traffic ...
+└── manual/
+    ├── en.ts             # English manual (static)
+    ├── zh.ts             # Chinese manual (static)
+    └── ru.ts             # Russian manual (static)
+```
+
+---
+
+## 📋 API Coverage
+
+| Endpoint | CLI command |
+|----------|-------------|
+| `GET /api/users/me` | `anyip account me` |
+| `GET /api/proxy_accounts` | `anyip account list` |
+| `POST /api/proxy_accounts` | `anyip account create` / `anyip generate` |
+| `GET /api/proxy_accounts/:id` | `anyip account inspect` |
+| `PUT /api/proxy_accounts/:id` | `anyip account enable/disable` |
+| `PUT /api/proxy_accounts/bulk_reset` | `anyip account bulk-reset` |
+| `GET /api/data/country` | `anyip data countries` |
+| `GET /api/data/region/:country` | `anyip data regions` |
+| `GET /api/data/asn/:country` | `anyip data asn` |
+| `GET /api/traffics` | `anyip traffic list` |
+| `GET /api/traffics/export` | `anyip traffic export` |
+
+---
+
+## 🏗️ Development
+
+```bash
+npm run dev      # run from source with tsx (no build step)
+npm run build    # compile with tsup → dist/index.js
+npm start        # run the compiled binary
+```
+
+Built with: **TypeScript · Commander.js · chalk · ora · cli-table3 · Conf · tsup**
