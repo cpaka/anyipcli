@@ -7,6 +7,8 @@ anyIP.io provides residential and mobile proxies for web scraping, automation, a
 collection. This CLI lets you manage proxy accounts, monitor bandwidth, create proxy sessions,
 and spin up entire proxy setups using plain English — all from your terminal.
 
+Official documentation: https://anyip.io/docs/guides/quick-start
+
 ---
 
 ## Installation

@@ -8,6 +8,8 @@ recopilación de datos. Este CLI te permite gestionar cuentas proxy, monitorear 
 de banda, crear sesiones y generar configuraciones completas usando lenguaje natural —
 todo desde tu terminal.
 
+Documentación oficial: https://anyip.io/docs/guides/quick-start
+
 ---
 
 ## Instalación
