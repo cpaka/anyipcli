@@ -17,7 +17,8 @@
     "anyip": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "proxy-manager.html"
   ],
   "scripts": {
     "build": "tsup",
