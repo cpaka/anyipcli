@@ -7,6 +7,7 @@ import { join, dirname } from "node:path";
 import { config } from "./config.js";
 import * as api from "./api.js";
 import * as sessions from "./sessions.js";
+import { EN_MANUAL } from "./manual/en.js";
 import chalk from "chalk";
 
 function getAnyipKey(): string {
@@ -111,6 +112,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     if (path === "/api/sessions" && method === "GET") {
       return json(res, 200, sessions.listSessions());
+    }
+
+    if (path === "/api/manual" && method === "GET") {
+      return json(res, 200, { content: EN_MANUAL });
     }
 
     const sessionMatch = path.match(/^\/api\/sessions\/([^/]+)$/);

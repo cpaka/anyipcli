@@ -52,6 +52,14 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 .form-label { font-weight: 500; color: #444; }
 .progress { height: 6px; }
 [hidden] { display: none !important; }
+.manual-body h3 { font-size: 1.4rem; }
+.manual-body h4 { font-size: 1.1rem; color: var(--brand); border-bottom: 1px solid #eee; padding-bottom: .25rem; margin-top: 2rem; }
+.manual-body h5 { font-size: .95rem; margin-top: 1.4rem; }
+.manual-body pre { font-size: .82rem; background: #f8f4ff; border: 1px solid #e8dcf5; border-radius: 6px; padding: .85rem 1rem; }
+.manual-body code { font-size: .82rem; background: var(--brand-light); padding: 1px 5px; border-radius: 3px; color: var(--brand-dark); }
+.manual-body pre code { background: none; padding: 0; color: #2d2d2d; }
+.manual-body ul { padding-left: 1.25rem; }
+.manual-body a { color: var(--brand); }
 </style>
 </head>
 <body>
@@ -89,6 +97,11 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
       <button class="nav-link" data-bs-toggle="tab" data-bs-target="#proxies" type="button">
         <i class="bi bi-hdd-network me-1"></i> Proxies
         <span id="proxyCountBadge" class="badge bg-secondary ms-1">0</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="manualTabBtn" data-bs-toggle="tab" data-bs-target="#manual" type="button">
+        <i class="bi bi-book me-1"></i> Manual
       </button>
     </li>
   </ul>
@@ -206,6 +219,15 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
         <div id="proxyEmpty" class="empty-state">
           <i class="bi bi-inbox"></i>
           <div>No proxies yet. Click <strong>+ New Proxy</strong> to generate one.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANUAL -->
+    <div class="tab-pane fade" id="manual">
+      <div id="manualContent" class="card stat-card p-4" style="max-width:860px">
+        <div class="text-center py-5 text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span> Loading manual…
         </div>
       </div>
     </div>
@@ -368,7 +390,7 @@ var COUNTRIES = [
   ['RO','Romania'],['HU','Hungary'],['CO','Colombia'],['PE','Peru'],
 ];
 
-var state = { sessions: null, user: null, accountsLoaded: false };
+var state = { sessions: null, user: null, accountsLoaded: false, manualLoaded: false };
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
 function esc(s) {
@@ -693,6 +715,86 @@ function initProxiesTab() {
   });
 }
 
+/* ── Manual tab ─────────────────────────────────────────────────────────────── */
+function inlineFmt(text) {
+  var parts = text.split('`');
+  return parts.map(function(p, idx) {
+    if (idx % 2 === 1) return '<code>' + esc(p) + '</code>';
+    return esc(p).replace(/https?:\/\/[^\s<"]+/g, function(url) {
+      return '<a href="' + url + '" target="_blank">' + url + '</a>';
+    });
+  }).join('');
+}
+function renderManual(md) {
+  var lines = md.split('\n');
+  var html = '';
+  var i = 0;
+  while (i < lines.length) {
+    var line = lines[i];
+    if (line.startsWith('### ')) {
+      html += '<h5>' + inlineFmt(line.slice(4)) + '</h5>';
+      i++; continue;
+    }
+    if (line.startsWith('## ')) {
+      html += '<h4>' + inlineFmt(line.slice(3)) + '</h4>';
+      i++; continue;
+    }
+    if (line.startsWith('# ')) {
+      html += '<h3 class="mb-1">' + inlineFmt(line.slice(2)) + '</h3>';
+      i++; continue;
+    }
+    if (line === '---') {
+      html += '<hr class="my-3">';
+      i++; continue;
+    }
+    if (line.startsWith('    ')) {
+      var codeLines = [];
+      while (i < lines.length && (lines[i].startsWith('    ') ||
+             (lines[i] === '' && i + 1 < lines.length && lines[i+1].startsWith('    ')))) {
+        codeLines.push(lines[i].startsWith('    ') ? lines[i].slice(4) : '');
+        i++;
+      }
+      while (codeLines.length && codeLines[codeLines.length-1] === '') codeLines.pop();
+      html += '<pre><code>' + codeLines.map(esc).join('\n') + '</code></pre>';
+      continue;
+    }
+    if (line.startsWith('- ')) {
+      var listItems = [];
+      while (i < lines.length && lines[i].startsWith('- ')) {
+        listItems.push('<li>' + inlineFmt(lines[i].slice(2)) + '</li>');
+        i++;
+      }
+      html += '<ul class="my-2">' + listItems.join('') + '</ul>';
+      continue;
+    }
+    if (line.trim() === '') { i++; continue; }
+    var paraLines = [];
+    while (i < lines.length && lines[i].trim() !== '' &&
+           !lines[i].startsWith('#') && lines[i] !== '---' &&
+           !lines[i].startsWith('    ') && !lines[i].startsWith('- ')) {
+      paraLines.push(lines[i]);
+      i++;
+    }
+    if (paraLines.length) {
+      html += '<p class="mb-2">' + paraLines.map(inlineFmt).join('<br>') + '</p>';
+    }
+  }
+  return html;
+}
+function initManualTab() {
+  document.getElementById('manualTabBtn').addEventListener('shown.bs.tab', function() {
+    if (state.manualLoaded) return;
+    state.manualLoaded = true;
+    apiGet('/api/manual').then(function(data) {
+      document.getElementById('manualContent').innerHTML =
+        '<div class="manual-body">' + renderManual(data.content) + '</div>';
+    }).catch(function(e) {
+      document.getElementById('manualContent').innerHTML =
+        '<div class="alert alert-danger">Error loading manual: ' + esc(String(e)) + '</div>';
+    });
+  });
+}
+
 /* ── Toggle groups ──────────────────────────────────────────────────────────── */
 function wireToggles() {
   document.querySelectorAll('.toggle-group').forEach(function(g){
@@ -822,6 +924,7 @@ function handleGenerate() {
 document.addEventListener('DOMContentLoaded',function(){
   wireToggles();
   initProxiesTab();
+  initManualTab();
   initModal();
   initNavbar();
 
