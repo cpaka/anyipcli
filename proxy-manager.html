@@ -225,9 +225,25 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 
     <!-- MANUAL -->
     <div class="tab-pane fade" id="manual">
-      <div id="manualContent" class="card stat-card p-4" style="max-width:860px">
-        <div class="text-center py-5 text-muted">
-          <span class="spinner-border spinner-border-sm me-2"></span> Loading manual…
+      <div class="card stat-card p-4" style="max-width:860px">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <i class="bi bi-book text-primary fs-5"></i>
+          <span class="fw-semibold">User Manual</span>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <span class="text-muted small">Language:</span>
+            <div class="btn-group btn-group-sm" id="langSelector">
+              <button class="btn btn-outline-primary active" data-lang="en">EN</button>
+              <button class="btn btn-outline-primary" data-lang="fr">FR</button>
+              <button class="btn btn-outline-primary" data-lang="es">ES</button>
+              <button class="btn btn-outline-primary" data-lang="zh">中文</button>
+              <button class="btn btn-outline-primary" data-lang="ru">RU</button>
+            </div>
+          </div>
+        </div>
+        <div id="manualContent">
+          <div class="text-center py-5 text-muted">
+            <span class="spinner-border spinner-border-sm me-2"></span> Loading manual…
+          </div>
         </div>
       </div>
     </div>
@@ -781,17 +797,27 @@ function renderManual(md) {
   }
   return html;
 }
+function loadManual(lang) {
+  var el = document.getElementById('manualContent');
+  el.innerHTML = '<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading…</div>';
+  apiGet('/api/manual?lang=' + encodeURIComponent(lang)).then(function(data) {
+    el.innerHTML = '<div class="manual-body">' + renderManual(data.content) + '</div>';
+  }).catch(function(e) {
+    el.innerHTML = '<div class="alert alert-danger">Error loading manual: ' + esc(String(e)) + '</div>';
+  });
+}
 function initManualTab() {
   document.getElementById('manualTabBtn').addEventListener('shown.bs.tab', function() {
     if (state.manualLoaded) return;
     state.manualLoaded = true;
-    apiGet('/api/manual').then(function(data) {
-      document.getElementById('manualContent').innerHTML =
-        '<div class="manual-body">' + renderManual(data.content) + '</div>';
-    }).catch(function(e) {
-      document.getElementById('manualContent').innerHTML =
-        '<div class="alert alert-danger">Error loading manual: ' + esc(String(e)) + '</div>';
-    });
+    loadManual('en');
+  });
+  document.getElementById('langSelector').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-lang]');
+    if (!btn) return;
+    document.querySelectorAll('#langSelector [data-lang]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    loadManual(btn.dataset.lang);
   });
 }
 

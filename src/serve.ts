@@ -8,6 +8,10 @@ import { config } from "./config.js";
 import * as api from "./api.js";
 import * as sessions from "./sessions.js";
 import { EN_MANUAL } from "./manual/en.js";
+import { FR_MANUAL } from "./manual/fr.js";
+import { ES_MANUAL } from "./manual/es.js";
+import { ZH_MANUAL } from "./manual/zh.js";
+import { RU_MANUAL } from "./manual/ru.js";
 import chalk from "chalk";
 
 function getAnyipKey(): string {
@@ -115,7 +119,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     }
 
     if (path === "/api/manual" && method === "GET") {
-      return json(res, 200, { content: EN_MANUAL });
+      const lang = url.searchParams.get("lang") ?? "en";
+      const manuals: Record<string, string> = {
+        en: EN_MANUAL, fr: FR_MANUAL, es: ES_MANUAL, zh: ZH_MANUAL, ru: RU_MANUAL,
+      };
+      return json(res, 200, { content: manuals[lang] ?? EN_MANUAL });
     }
 
     const sessionMatch = path.match(/^\/api\/sessions\/([^/]+)$/);
