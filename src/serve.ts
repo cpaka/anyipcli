@@ -122,7 +122,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     json(res, 404, { error: "Not found" });
   } catch (err) {
-    json(res, 500, { error: String(err) });
+    try { json(res, 500, { error: String(err) }); } catch { /* headers already sent */ }
   }
 }
 
@@ -233,7 +233,17 @@ export async function startServer(preferredPort: number): Promise<void> {
     console.log(chalk.yellow("  Port " + preferredPort + " busy — using " + port));
   }
 
-  const server = http.createServer(handleRequest);
+  const server = http.createServer((req, res) => {
+    handleRequest(req, res).catch((err) => {
+      console.error("  Request error:", err);
+      if (!res.headersSent) {
+        try {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: String(err) }));
+        } catch { /* socket already closed */ }
+      }
+    });
+  });
   await new Promise<void>((resolve, reject) => {
     server.listen(port, "127.0.0.1", resolve);
     server.on("error", reject);
