@@ -90,6 +90,26 @@ anyip config clear   # wipe stored config
 
 ---
 
+## 🔒 Local Data & Privacy
+
+All credentials and proxy session data are stored **on your machine only** — nothing is included in this repository or sent anywhere except the anyIP.io API.
+
+| File | Location (macOS / Linux) | What it contains |
+|------|--------------------------|-----------------|
+| `config.json` | `~/Library/Preferences/anyip-cli-nodejs/` · `~/.config/anyip-cli-nodejs/` | API keys (encrypted by OS keychain on macOS) |
+| `sessions.json` | same directory | Saved proxy sessions (server, port, username, password) |
+
+These files are **outside the project directory** — git never sees them, and they are never pushed to any repository. There is nothing to add to `.gitignore` for them.
+
+If you ever need to inspect or wipe the stored data:
+```bash
+anyip config show     # show masked keys and the config file path
+anyip config clear    # wipe stored API keys
+anyip proxy clear     # wipe all saved proxy sessions
+```
+
+---
+
 ## 📡 Account Management
 
 ```bash
@@ -242,10 +262,11 @@ anyip serve --port 8080   # custom port
 Press `Ctrl+C` to stop.
 
 **Dashboard features:**
+- 💾 **Saved sessions** — your locally stored proxies load automatically on startup
 - 📋 Proxy account table with enable/disable toggles
-- 🤖 AI proxy generator form
-- 📈 Traffic overview
-- 💾 Session viewer
+- ➕ New proxy creation form (HTTP or SOCKS5, sticky or rotating, by country)
+- 📈 Stats breakdown by network type, connection type, and location
+- 📋 Copy / export proxy strings in any format
 
 ---
 
@@ -257,7 +278,9 @@ Built-in static manuals — no API call, no internet required:
 anyip man                    # English
 anyip man --language zh      # 中文 (Chinese)
 anyip man --language ru      # Русский (Russian)
-anyip man --language French  # any other language — generated via Claude
+anyip man --language es      # Español (Spanish)
+anyip man --language fr      # Français (French)
+anyip man --language Japanese  # any other language — generated via Claude
 ```
 
 ---
@@ -332,14 +355,15 @@ ANYIP_API_KEY=$SECRET anyip traffic list --json > metrics.json
 ## 🗂️ Project Structure
 
 ```
+proxy-manager.html        # Web dashboard UI (served by `anyip serve`)
 src/
 ├── index.ts              # CLI entry — wires all commands together
 ├── api.ts                # anyIP.io REST API client
 ├── ai.ts                 # Claude AI — plan generation & NL parsing
 ├── config.ts             # Key storage (Conf) + env var fallback
 ├── display.ts            # Tables, cards, colors (chalk + cli-table3)
-├── sessions.ts           # Local proxy session store
-├── serve.ts              # Local web dashboard (embedded HTML)
+├── sessions.ts           # Local proxy session store (read/write)
+├── serve.ts              # HTTP server — API routes + serves proxy-manager.html
 ├── utils.ts              # ask(), askSecret(), buildPortConfig()
 ├── commands/
 │   ├── account.ts        # anyip account ...
@@ -351,9 +375,11 @@ src/
 │   ├── serve.ts          # anyip serve
 │   └── traffic.ts        # anyip traffic ...
 └── manual/
-    ├── en.ts             # English manual (static)
-    ├── zh.ts             # Chinese manual (static)
-    └── ru.ts             # Russian manual (static)
+    ├── en.ts             # English (static)
+    ├── zh.ts             # Chinese (static)
+    ├── ru.ts             # Russian (static)
+    ├── es.ts             # Spanish (static)
+    └── fr.ts             # French (static)
 ```
 
 ---
