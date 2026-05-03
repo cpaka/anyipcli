@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>anyIP — Proxy Manager</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+<style>
+:root {
+  --brand: #5C0FBA;
+  --brand-light: #f3ecfb;
+  --brand-dark: #430b87;
+  --bs-primary: #5C0FBA;
+  --bs-primary-rgb: 92,15,186;
+}
+body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.navbar-brand { font-weight: 700; letter-spacing: -.3px; }
+.btn-primary { background: var(--brand); border-color: var(--brand); }
+.btn-primary:hover,.btn-primary:focus { background: var(--brand-dark); border-color: var(--brand-dark); }
+.btn-outline-primary { color: var(--brand); border-color: var(--brand); }
+.btn-outline-primary:hover { background: var(--brand); border-color: var(--brand); color: #fff; }
+.text-primary { color: var(--brand) !important; }
+.bg-primary { background-color: var(--brand) !important; }
+.nav-tabs .nav-link.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+.nav-tabs .nav-link { color: #555; }
+.progress-bar.bg-primary { background-color: var(--brand) !important; }
+
+.toggle-group { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--brand); }
+.toggle-btn { flex: 1; padding: 10px 16px; text-align: center; cursor: pointer;
+  background: #fff; color: var(--brand); border: none; font-weight: 500; transition: all .15s; }
+.toggle-btn.active { background: var(--brand); color: #fff; }
+.toggle-btn:hover:not(.active) { background: var(--brand-light); }
+
+.stat-card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-radius: 12px; }
+.stat-value { font-size: 2rem; font-weight: 700; color: var(--brand); }
+.stat-label { color: #6c757d; font-size: .875rem; text-transform: uppercase; letter-spacing: .5px; }
+
+.badge-soft { background: var(--brand-light); color: var(--brand); font-weight: 500; }
+.filter-bar { background: #fff; padding: 12px 16px; border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04); margin-bottom: 16px; }
+.proxy-table { font-size: .9rem; }
+.proxy-table th { font-weight: 600; color: #555; font-size: .8rem; text-transform: uppercase; letter-spacing: .3px; }
+.proxy-table code { font-size: .82rem; color: #333; word-break: break-all; }
+.empty-state { text-align: center; padding: 60px 20px; color: #999; }
+.empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; opacity: .4; }
+.session-input-wrap { position: relative; }
+.session-refresh { position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: var(--brand-light); border: none; border-radius: 50%; width: 32px; height: 32px;
+  color: var(--brand); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.session-refresh:hover { background: var(--brand); color: #fff; }
+.form-label { font-weight: 500; color: #444; }
+.progress { height: 6px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand mb-0 d-flex align-items-center gap-2">
+      <i class="bi bi-globe2 text-primary"></i> anyIP Proxy Manager
+    </span>
+    <div class="d-flex align-items-center gap-2">
+      <span id="navStatus" class="text-muted small d-none d-md-inline">
+        <span class="spinner-border spinner-border-sm"></span>
+      </span>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newProxyModal">
+        <i class="bi bi-plus-lg"></i> New Proxy
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4" style="max-width:1280px">
+
+  <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats" type="button">
+        <i class="bi bi-bar-chart-line me-1"></i> Stats
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="accountTabBtn" data-bs-toggle="tab" data-bs-target="#account" type="button">
+        <i class="bi bi-person-circle me-1"></i> Account
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#proxies" type="button">
+        <i class="bi bi-hdd-network me-1"></i> Proxies
+        <span id="proxyCountBadge" class="badge bg-secondary ms-1">0</span>
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- STATS -->
+    <div class="tab-pane fade show active" id="stats">
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card p-3">
+            <div class="stat-label">Total proxies</div>
+            <div class="stat-value" id="statTotal">—</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card p-3">
+            <div class="stat-label">Residential</div>
+            <div class="stat-value" id="statResidential">—</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card p-3">
+            <div class="stat-label">Mobile</div>
+            <div class="stat-value" id="statMobile">—</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card p-3">
+            <div class="stat-label">Sticky / Rotating</div>
+            <div class="stat-value">
+              <span id="statSticky">—</span>
+              <span class="text-muted fs-5">/</span>
+              <span id="statRotating">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card stat-card p-3">
+            <h6 class="mb-3">By connection type</h6>
+            <div id="statConnection"><span class="text-muted small">Loading…</span></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card stat-card p-3">
+            <h6 class="mb-3">By location</h6>
+            <div id="statLocation"><span class="text-muted small">Loading…</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="tab-pane fade" id="account">
+      <div id="accountContent">
+        <div class="text-center py-5 text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span> Loading account…
+        </div>
+      </div>
+    </div>
+
+    <!-- PROXIES -->
+    <div class="tab-pane fade" id="proxies">
+      <div class="filter-bar d-flex flex-wrap gap-2 align-items-center">
+        <input type="text" class="form-control form-control-sm" id="searchInput"
+          placeholder="Search name, country, tag…" style="max-width:280px" />
+        <select class="form-select form-select-sm" id="filterNetwork" style="max-width:160px">
+          <option value="">All networks</option>
+          <option value="residential">Residential</option>
+          <option value="mobile">Mobile</option>
+        </select>
+        <select class="form-select form-select-sm" id="filterSession" style="max-width:160px">
+          <option value="">All sessions</option>
+          <option value="sticky">Sticky</option>
+          <option value="rotating">Rotating</option>
+        </select>
+        <select class="form-select form-select-sm" id="formatSelect" style="max-width:240px">
+          <option value="hostuser">host:port:user:pass</option>
+          <option value="userhost">user:pass@host:port</option>
+          <option value="http">http://user:pass@host:port</option>
+          <option value="socks5">socks5://user:pass@host:port</option>
+        </select>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-sm btn-outline-primary" id="refreshBtn">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+          <button class="btn btn-sm btn-outline-primary" id="copyAllBtn">
+            <i class="bi bi-clipboard"></i> Copy all
+          </button>
+          <button class="btn btn-sm btn-outline-primary" id="exportBtn">
+            <i class="bi bi-download"></i> Export .txt
+          </button>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="table-responsive">
+          <table class="table table-hover proxy-table mb-0 align-middle">
+            <thead>
+              <tr>
+                <th class="ps-3">Network</th>
+                <th>Session</th>
+                <th>Conn</th>
+                <th>Location</th>
+                <th>Proxy string</th>
+                <th>Created</th>
+                <th class="text-end pe-3"></th>
+              </tr>
+            </thead>
+            <tbody id="proxyTableBody"></tbody>
+          </table>
+        </div>
+        <div id="proxyEmpty" class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <div>No proxies yet. Click <strong>+ New Proxy</strong> to generate one.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NEW PROXY MODAL -->
+<div class="modal fade" id="newProxyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle text-primary me-2"></i>Create new proxy
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">Network type :</label>
+          <div class="col-sm-9">
+            <div class="toggle-group" data-field="networkType">
+              <button type="button" class="toggle-btn active" data-value="residential">Residential</button>
+              <button type="button" class="toggle-btn" data-value="mobile">Mobile</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">Session type :</label>
+          <div class="col-sm-9">
+            <div class="toggle-group" data-field="sessionType">
+              <button type="button" class="toggle-btn active" data-value="sticky">Sticky</button>
+              <button type="button" class="toggle-btn" data-value="rotating">Rotating</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center" id="sessionNameRow">
+          <label class="col-sm-3 col-form-label">Session name :</label>
+          <div class="col-sm-9">
+            <div class="session-input-wrap">
+              <input type="text" class="form-control" id="sessionName" placeholder="randSession1234" />
+              <button type="button" class="session-refresh" id="regenSession" title="Randomise">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <div class="form-text">With quantity &gt; 1, a numeric suffix is appended automatically.</div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">Connection type :</label>
+          <div class="col-sm-9">
+            <div class="toggle-group" data-field="connectionType">
+              <button type="button" class="toggle-btn active" data-value="http">HTTP proxy</button>
+              <button type="button" class="toggle-btn" data-value="socks5">SOCKS5 proxy</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">Location :</label>
+          <div class="col-sm-9">
+            <div class="toggle-group" data-field="locationType">
+              <button type="button" class="toggle-btn active" data-value="worldwide">Worldwide</button>
+              <button type="button" class="toggle-btn" data-value="country">Country</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center" id="countryRow" hidden>
+          <label class="col-sm-3 col-form-label">Country :</label>
+          <div class="col-sm-9">
+            <select class="form-select" id="countryCode"></select>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">Proxy password :</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="proxyPassword"
+              placeholder="Leave blank to auto-generate" />
+          </div>
+        </div>
+
+        <hr class="my-3" />
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">
+            <i class="bi bi-stack text-primary"></i> Quantity :
+          </label>
+          <div class="col-sm-9">
+            <input type="number" class="form-control" id="proxyQuantity"
+              value="1" min="1" max="100" style="max-width:140px" />
+            <div class="form-text">Number of proxy accounts to create at once (1–100).</div>
+          </div>
+        </div>
+
+        <div class="row mb-2 align-items-center">
+          <label class="col-sm-3 col-form-label">
+            Label <span class="text-muted small">(optional)</span> :
+          </label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="proxyLabel" placeholder="e.g. scraper-batch-A" />
+          </div>
+        </div>
+
+        <div id="modalAlert" class="alert alert-warning mt-3" hidden></div>
+
+        <div id="modalProgress" class="mt-3" hidden>
+          <div class="d-flex align-items-center gap-2 text-muted small mb-1">
+            <span class="spinner-border spinner-border-sm"></span>
+            <span id="progressText">Creating proxies…</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar bg-primary" id="progressBar" style="width:0%"></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="generateBtn">
+          <i class="bi bi-magic"></i> Generate
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="appToast" class="toast align-items-center border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastBody"></div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+var COUNTRIES = [
+  ['US','United States'],['GB','United Kingdom'],['DE','Germany'],['FR','France'],
+  ['IT','Italy'],['ES','Spain'],['NL','Netherlands'],['CA','Canada'],
+  ['AU','Australia'],['JP','Japan'],['KR','South Korea'],['BR','Brazil'],
+  ['MX','Mexico'],['IN','India'],['ID','Indonesia'],['TH','Thailand'],
+  ['VN','Vietnam'],['SG','Singapore'],['MY','Malaysia'],['PH','Philippines'],
+  ['TR','Turkey'],['RU','Russia'],['PL','Poland'],['SE','Sweden'],
+  ['NO','Norway'],['FI','Finland'],['DK','Denmark'],['AR','Argentina'],
+  ['CL','Chile'],['ZA','South Africa'],['AE','UAE'],['IL','Israel'],
+  ['EG','Egypt'],['CH','Switzerland'],['AT','Austria'],['BE','Belgium'],
+  ['IE','Ireland'],['PT','Portugal'],['GR','Greece'],['CZ','Czech Republic'],
+  ['HK','Hong Kong'],['TW','Taiwan'],['NZ','New Zealand'],['UA','Ukraine'],
+  ['RO','Romania'],['HU','Hungary'],['CO','Colombia'],['PE','Peru'],
+];
+
+var state = { sessions: null, user: null, accountsLoaded: false };
+
+/* ── Utils ──────────────────────────────────────────────────────────────────── */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmtBytes(n) {
+  if (!n) return '0 B';
+  var units = ['B','KB','MB','GB','TB'], i = 0, v = Number(n);
+  while (v >= 1024 && i < units.length-1) { v /= 1024; i++; }
+  return v.toFixed(2) + ' ' + units[i];
+}
+function timeAgo(iso) {
+  if (!iso) return '—';
+  var sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return Math.floor(sec/60) + 'm ago';
+  if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
+  return Math.floor(sec/86400) + 'd ago';
+}
+function toast(msg, variant) {
+  var el = document.getElementById('appToast');
+  el.className = 'toast align-items-center border-0 text-bg-' + (variant || 'dark');
+  document.getElementById('toastBody').textContent = msg;
+  bootstrap.Toast.getOrCreateInstance(el, {delay:2400}).show();
+}
+function randSession() {
+  return 'randSession' + Math.floor(1000 + Math.random()*9000);
+}
+
+/* ── HTTP helpers ───────────────────────────────────────────────────────────── */
+function apiGet(path) {
+  return fetch(path).then(function(r) {
+    if (!r.ok) return r.json().then(function(d){ throw new Error(d.error||'HTTP '+r.status); });
+    return r.json();
+  });
+}
+function apiPost(path, body) {
+  return fetch(path, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r) {
+      return r.json().then(function(d){
+        if (!r.ok) throw new Error(d.error||'HTTP '+r.status);
+        return d;
+      });
+    });
+}
+function apiDelete(path) {
+  return fetch(path, {method:'DELETE'}).then(function(r){ return r.json(); });
+}
+function apiPut(path, body) {
+  return fetch(path, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){
+      return r.json().then(function(d){
+        if (!r.ok) throw new Error(d.error||'HTTP '+r.status);
+        return d;
+      });
+    });
+}
+
+/* ── Data loaders ───────────────────────────────────────────────────────────── */
+function loadSessions(force) {
+  if (!force && state.sessions !== null) return Promise.resolve(state.sessions);
+  return apiGet('/api/sessions').then(function(data){
+    state.sessions = data;
+    return data;
+  });
+}
+function loadAccounts(force) {
+  return apiGet('/api/accounts').then(function(data){
+    return data.members || [];
+  });
+}
+function loadUser() {
+  if (state.user) return Promise.resolve(state.user);
+  return apiGet('/api/me').then(function(u){ state.user = u; return u; });
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────────────────── */
+function initNavbar() {
+  loadUser().then(function(u) {
+    var sub = u.subscription || {};
+    var used = sub.consumption || u.consumption || 0;
+    var quota = sub.current_quota || u.quota || 0;
+    document.getElementById('navStatus').innerHTML =
+      '<i class="bi bi-person-check-fill text-success"></i> ' + esc(u.email || u.username || 'Account') +
+      (used ? ' &nbsp;&middot;&nbsp; ' + fmtBytes(used) + ' used' : '') +
+      (quota ? ' / ' + fmtBytes(quota) : '');
+  }).catch(function(e) {
+    document.getElementById('navStatus').innerHTML =
+      '<i class="bi bi-exclamation-circle text-warning"></i> ' + esc(String(e));
+  });
+}
+
+/* ── Stats tab ──────────────────────────────────────────────────────────────── */
+function renderStats(list) {
+  var total = list.length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statResidential').textContent = list.filter(function(s){return s.networkType==='residential';}).length;
+  document.getElementById('statMobile').textContent = list.filter(function(s){return s.networkType==='mobile';}).length;
+  document.getElementById('statSticky').textContent = list.filter(function(s){return !s.rotating;}).length;
+  document.getElementById('statRotating').textContent = list.filter(function(s){return !!s.rotating;}).length;
+  document.getElementById('proxyCountBadge').textContent = total;
+
+  var connCounts = {};
+  list.forEach(function(s){ var k=s.connectionType||'http'; connCounts[k]=(connCounts[k]||0)+1; });
+  document.getElementById('statConnection').innerHTML = breakdown(connCounts, total, function(v){return v.toUpperCase();});
+
+  var locCounts = {};
+  list.forEach(function(s){ var k=s.country||'Worldwide'; locCounts[k]=(locCounts[k]||0)+1; });
+  document.getElementById('statLocation').innerHTML = breakdown(locCounts, total, function(v){return v;});
+}
+function breakdown(counts, total, fmt) {
+  var entries = Object.entries(counts).sort(function(a,b){return b[1]-a[1];});
+  if (!entries.length) return '<div class="text-muted small">No data yet</div>';
+  return entries.map(function(e) {
+    var pct = total ? (e[1]/total*100).toFixed(0) : 0;
+    return '<div class="mb-2"><div class="d-flex justify-content-between small">' +
+      '<span>'+esc(fmt(e[0]))+'</span><span class="text-muted">'+e[1]+' &middot; '+pct+'%</span></div>' +
+      '<div class="progress"><div class="progress-bar bg-primary" style="width:'+pct+'%"></div></div></div>';
+  }).join('');
+}
+
+/* ── Account tab ────────────────────────────────────────────────────────────── */
+function renderAccountTab() {
+  var el = document.getElementById('accountContent');
+  el.innerHTML = '<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading…</div>';
+
+  Promise.all([loadUser(), loadAccounts()]).then(function(results) {
+    var user = results[0];
+    var accounts = results[1];
+    var sub = user.subscription || {};
+    var used = sub.consumption || user.consumption || 0;
+    var quota = sub.current_quota || user.quota || 0;
+
+    var userCard = '<div class="card stat-card p-4 mb-4" style="max-width:640px">' +
+      '<div class="d-flex align-items-center gap-3">' +
+        '<i class="bi bi-person-circle text-primary" style="font-size:2.5rem"></i>' +
+        '<div>' +
+          '<div class="fw-semibold fs-6">' + esc(user.email || user.username || '—') + '</div>' +
+          '<div class="text-muted small mt-1">Used: <strong>' + fmtBytes(used) + '</strong>' +
+            (quota ? ' / ' + fmtBytes(quota) + ' (' + Math.min(100,(used/quota*100)).toFixed(0) + '%)' : ' / unlimited') +
+          '</div>' +
+        '</div>' +
+      '</div></div>';
+
+    var tableHtml;
+    if (!accounts.length) {
+      tableHtml = '<div class="empty-state"><i class="bi bi-inbox"></i>' +
+        '<div>No proxy accounts yet.</div></div>';
+    } else {
+      var rows = accounts.map(function(p) {
+        var statusBadge;
+        if (!p.enabled) statusBadge = '<span class="badge bg-secondary">Disabled</span>';
+        else if (p.status === 'ACCOUNT_BLOCKED') statusBadge = '<span class="badge bg-danger">Blocked</span>';
+        else statusBadge = '<span class="badge badge-soft">Active</span>';
+        var u2 = p.consumption||p.bytes_recv||0, q2 = p.quota||0;
+        return '<tr><td class="ps-3"><code class="text-muted" style="font-size:.78rem">'+esc(p.id.slice(-8))+'</code></td>' +
+          '<td><strong class="text-primary">'+esc(p.username||'—')+'</strong></td>' +
+          '<td class="text-muted small">'+esc(p.description||'')+'</td>' +
+          '<td>'+statusBadge+'</td>' +
+          '<td class="text-muted small">'+fmtBytes(u2)+(q2?' / '+fmtBytes(q2):'')+'</td>' +
+          '<td class="text-end pe-3">' +
+            (p.enabled
+              ? '<button class="btn btn-sm btn-outline-danger acc-toggle" data-id="'+esc(p.id)+'" data-val="false">Disable</button>'
+              : '<button class="btn btn-sm btn-outline-success acc-toggle" data-id="'+esc(p.id)+'" data-val="true">Enable</button>') +
+          '</td></tr>';
+      }).join('');
+      tableHtml = '<div class="card stat-card">' +
+        '<div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom">' +
+          '<h6 class="mb-0">Proxy Accounts</h6>' +
+          '<span class="badge bg-secondary">'+accounts.length+'</span>' +
+          '<button class="btn btn-sm btn-outline-primary ms-auto" id="refreshAccountsBtn">' +
+            '<i class="bi bi-arrow-clockwise"></i> Refresh</button>' +
+        '</div>' +
+        '<div class="table-responsive">' +
+          '<table class="table table-hover proxy-table mb-0 align-middle"><thead><tr>' +
+            '<th class="ps-3">ID</th><th>Username</th><th>Description</th>' +
+            '<th>Status</th><th>Usage</th><th class="text-end pe-3"></th>' +
+          '</tr></thead><tbody>'+rows+'</tbody></table>' +
+        '</div></div>';
+    }
+
+    el.innerHTML = userCard + tableHtml;
+
+    el.querySelectorAll('.acc-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var enabled = btn.dataset.val === 'true';
+        btn.disabled = true;
+        apiPut('/api/accounts/'+btn.dataset.id, {enabled:enabled}).then(function(){
+          toast(enabled ? 'Account enabled' : 'Account disabled', 'success');
+          renderAccountTab();
+        }).catch(function(e){ toast('Error: '+e,'danger'); btn.disabled=false; });
+      });
+    });
+
+    var rb = document.getElementById('refreshAccountsBtn');
+    if (rb) rb.addEventListener('click', function(){ renderAccountTab(); });
+  }).catch(function(e) {
+    el.innerHTML = '<div class="alert alert-danger">Error loading account: '+esc(String(e))+'</div>';
+  });
+}
+
+/* ── Proxies tab ────────────────────────────────────────────────────────────── */
+function buildProxyStr(s, fmt) {
+  var u=s.username, pw=s.password, h=s.server, p=s.port;
+  if (fmt==='userhost') return u+':'+pw+'@'+h+':'+p;
+  if (fmt==='http')     return 'http://'+u+':'+pw+'@'+h+':'+p;
+  if (fmt==='socks5')   return 'socks5://'+u+':'+pw+'@'+h+':'+p;
+  return h+':'+p+':'+u+':'+pw;
+}
+function getFilters() {
+  return {
+    q: document.getElementById('searchInput').value.toLowerCase(),
+    net: document.getElementById('filterNetwork').value,
+    ses: document.getElementById('filterSession').value,
+  };
+}
+function filtered(list) {
+  var f = getFilters();
+  return list.filter(function(s) {
+    if (f.net && s.networkType !== f.net) return false;
+    if (f.ses === 'sticky' && s.rotating) return false;
+    if (f.ses === 'rotating' && !s.rotating) return false;
+    if (f.q) {
+      var hay = [s.name,s.country,s.region,s.city,s.userTag,s.connectionType,s.networkType]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(f.q)) return false;
+    }
+    return true;
+  });
+}
+function renderProxies(list) {
+  var view = filtered(list);
+  var tbody = document.getElementById('proxyTableBody');
+  var empty = document.getElementById('proxyEmpty');
+  var fmt = document.getElementById('formatSelect').value;
+
+  if (!view.length) {
+    tbody.innerHTML = '';
+    empty.hidden = false;
+    empty.innerHTML = list.length
+      ? '<i class="bi bi-funnel"></i><div>No proxies match your filters.</div>'
+      : '<i class="bi bi-inbox"></i><div>No proxies yet. Click <strong>+ New Proxy</strong> to generate one.</div>';
+    return;
+  }
+  empty.hidden = true;
+
+  tbody.innerHTML = view.map(function(s) {
+    var str = buildProxyStr(s, fmt);
+    var net = s.networkType==='mobile'
+      ? '<span class="badge badge-soft"><i class="bi bi-phone"></i> Mobile</span>'
+      : '<span class="badge badge-soft"><i class="bi bi-house-wifi"></i> Residential</span>';
+    var ses = s.rotating
+      ? '<span class="badge bg-light text-dark border">Rotating</span>'
+      : '<span class="badge bg-light text-dark border">Sticky &middot; '+esc(s.name)+'</span>';
+    var conn = '<span class="badge bg-secondary text-uppercase">'+esc(s.connectionType||'http')+'</span>';
+    var loc = s.country
+      ? '<span class="badge bg-light text-dark border"><i class="bi bi-geo-alt"></i> '+esc(s.country)+'</span>'
+      : '<span class="text-muted small">Worldwide</span>';
+    var tag = s.userTag ? '<div class="text-muted" style="font-size:.75rem">'+esc(s.userTag)+'</div>' : '';
+    return '<tr>' +
+      '<td class="ps-3">'+net+tag+'</td>' +
+      '<td>'+ses+'</td><td>'+conn+'</td><td>'+loc+'</td>' +
+      '<td><code>'+esc(str)+'</code></td>' +
+      '<td><span class="text-muted small" title="'+esc(s.createdAt||'')+'">'+timeAgo(s.createdAt)+'</span></td>' +
+      '<td class="text-end pe-3">' +
+        '<button class="btn btn-sm btn-outline-primary me-1 copy-row" data-v="'+esc(str)+'" title="Copy"><i class="bi bi-clipboard"></i></button>' +
+        '<button class="btn btn-sm btn-outline-danger del-row" data-n="'+esc(s.name)+'" title="Delete"><i class="bi bi-trash"></i></button>' +
+      '</td></tr>';
+  }).join('');
+
+  tbody.querySelectorAll('.copy-row').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      navigator.clipboard.writeText(btn.dataset.v)
+        .then(function(){toast('Copied','success');})
+        .catch(function(){toast('Copy failed','danger');});
+    });
+  });
+  tbody.querySelectorAll('.del-row').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var n=btn.dataset.n;
+      if(!confirm('Delete session "'+n+'"?')) return;
+      apiDelete('/api/sessions/'+encodeURIComponent(n)).then(function(){
+        state.sessions=null;
+        loadSessions(true).then(function(l){ renderStats(l); renderProxies(l); });
+        toast('Deleted "'+n+'"');
+      }).catch(function(e){toast('Error: '+e,'danger');});
+    });
+  });
+}
+function initProxiesTab() {
+  ['searchInput','filterNetwork','filterSession','formatSelect'].forEach(function(id){
+    var el=document.getElementById(id);
+    el.addEventListener('input',function(){if(state.sessions)renderProxies(state.sessions);});
+    el.addEventListener('change',function(){if(state.sessions)renderProxies(state.sessions);});
+  });
+  document.getElementById('refreshBtn').addEventListener('click',function(){
+    state.sessions=null;
+    loadSessions(true).then(function(l){renderStats(l);renderProxies(l);toast('Refreshed','success');});
+  });
+  document.getElementById('copyAllBtn').addEventListener('click',function(){
+    if(!state.sessions||!state.sessions.length){toast('Nothing to copy');return;}
+    var fmt=document.getElementById('formatSelect').value;
+    var lines=filtered(state.sessions).map(function(s){return buildProxyStr(s,fmt);}).join('\n');
+    if(!lines){toast('Nothing to copy');return;}
+    navigator.clipboard.writeText(lines)
+      .then(function(){toast('Copied '+filtered(state.sessions).length+' proxies','success');})
+      .catch(function(){toast('Copy failed','danger');});
+  });
+  document.getElementById('exportBtn').addEventListener('click',function(){
+    if(!state.sessions||!state.sessions.length){toast('Nothing to export');return;}
+    var fmt=document.getElementById('formatSelect').value;
+    var view=filtered(state.sessions);
+    if(!view.length){toast('Nothing to export');return;}
+    var text=view.map(function(s){return buildProxyStr(s,fmt);}).join('\n');
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+    a.download='proxies-'+new Date().toISOString().slice(0,10)+'.txt';
+    a.click();
+    toast('Exported '+view.length+' proxies','success');
+  });
+}
+
+/* ── Toggle groups ──────────────────────────────────────────────────────────── */
+function wireToggles() {
+  document.querySelectorAll('.toggle-group').forEach(function(g){
+    g.addEventListener('click',function(e){
+      var btn=e.target.closest('.toggle-btn');
+      if(!btn) return;
+      g.querySelectorAll('.toggle-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      if(g.dataset.field==='sessionType') document.getElementById('sessionNameRow').hidden=(btn.dataset.value==='rotating');
+      if(g.dataset.field==='locationType') document.getElementById('countryRow').hidden=(btn.dataset.value!=='country');
+    });
+  });
+}
+function getToggle(field) {
+  var a=document.querySelector('.toggle-group[data-field="'+field+'"] .toggle-btn.active');
+  return a?a.dataset.value:null;
+}
+function resetToggle(field,val) {
+  document.querySelectorAll('.toggle-group[data-field="'+field+'"] .toggle-btn').forEach(function(b){
+    b.classList.toggle('active',b.dataset.value===val);
+  });
+  if(field==='sessionType') document.getElementById('sessionNameRow').hidden=(val==='rotating');
+  if(field==='locationType') document.getElementById('countryRow').hidden=(val!=='country');
+}
+
+/* ── New Proxy modal ────────────────────────────────────────────────────────── */
+function initModal() {
+  var sel=document.getElementById('countryCode');
+  COUNTRIES.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c[0]; o.textContent=c[1]+' ('+c[0]+')'; sel.appendChild(o);
+  });
+  sel.value='US';
+
+  document.getElementById('regenSession').addEventListener('click',function(){
+    document.getElementById('sessionName').value=randSession();
+  });
+
+  document.getElementById('newProxyModal').addEventListener('show.bs.modal',function(){
+    resetToggle('networkType','residential');
+    resetToggle('sessionType','sticky');
+    resetToggle('connectionType','http');
+    resetToggle('locationType','worldwide');
+    document.getElementById('sessionName').value=randSession();
+    document.getElementById('proxyPassword').value='';
+    document.getElementById('proxyQuantity').value=1;
+    document.getElementById('proxyLabel').value='';
+    document.getElementById('countryCode').value='US';
+    document.getElementById('modalAlert').hidden=true;
+    document.getElementById('modalProgress').hidden=true;
+  });
+
+  document.getElementById('generateBtn').addEventListener('click',handleGenerate);
+}
+
+function handleGenerate() {
+  var alertEl=document.getElementById('modalAlert');
+  alertEl.hidden=true;
+
+  var networkType=getToggle('networkType');
+  var sessionType=getToggle('sessionType');
+  var connType=getToggle('connectionType');
+  var locType=getToggle('locationType');
+  var country=locType==='country'?document.getElementById('countryCode').value:null;
+  var baseName=(document.getElementById('sessionName').value||randSession()).trim();
+  var proxyPwd=document.getElementById('proxyPassword').value;
+  var label=document.getElementById('proxyLabel').value.trim();
+  var qty=parseInt(document.getElementById('proxyQuantity').value,10)||1;
+  if(qty<1)qty=1; if(qty>100)qty=100;
+
+  var genBtn=document.getElementById('generateBtn');
+  genBtn.disabled=true;
+  var progEl=document.getElementById('modalProgress');
+  var progBar=document.getElementById('progressBar');
+  var progText=document.getElementById('progressText');
+  progEl.hidden=false;
+  progBar.style.width='0%';
+
+  var created=0, failed=0;
+  var chain=Promise.resolve();
+
+  for(var i=0;i<qty;i++){
+    (function(idx){
+      chain=chain.then(function(){
+        var sessName=sessionType==='sticky'?(qty>1?baseName+'-'+(idx+1):baseName):null;
+        var portCfg={};
+        if(networkType) portCfg.type=networkType;
+        if(country) portCfg.country=country;
+        if(sessName) portCfg.session=sessName;
+        var desc=label?(qty>1?label+' #'+(idx+1):label):
+          (networkType+' '+(sessionType==='rotating'?'rotating':'sticky')+(country?' - '+country:''));
+        var body={
+          description:desc,
+          enabled:true,
+          _connectionType:connType,
+          ip_whitelist:{ips:[],ports:Object.keys(portCfg).length?[portCfg]:[],is_enabled:false},
+        };
+        if(proxyPwd) body.plain_password=proxyPwd;
+        progText.textContent='Creating '+(idx+1)+' of '+qty+'…';
+        progBar.style.width=((idx/qty)*100)+'%';
+        return apiPost('/api/accounts',body).then(function(){created++;}).catch(function(){failed++;});
+      });
+    })(i);
+  }
+
+  chain.then(function(){
+    progBar.style.width='100%';
+    genBtn.disabled=false;
+    progEl.hidden=true;
+    if(created>0){
+      bootstrap.Modal.getInstance(document.getElementById('newProxyModal')).hide();
+      state.sessions=null;
+      loadSessions(true).then(function(l){
+        renderStats(l); renderProxies(l);
+        toast('Created '+created+(failed?' ('+failed+' failed)':'')+' prox'+(created===1?'y':'ies'),'success');
+        bootstrap.Tab.getOrCreateInstance(document.querySelectorAll('[data-bs-target="#proxies"]')[0]).show();
+      });
+    } else {
+      alertEl.hidden=false;
+      alertEl.className='alert alert-danger mt-3';
+      alertEl.textContent='Failed to create proxies. Check your API key and account limits.';
+    }
+  });
+}
+
+/* ── Boot ───────────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded',function(){
+  wireToggles();
+  initProxiesTab();
+  initModal();
+  initNavbar();
+
+  document.getElementById('accountTabBtn').addEventListener('shown.bs.tab',function(){
+    if(!state.accountsLoaded){ state.accountsLoaded=true; renderAccountTab(); }
+  });
+
+  loadSessions().then(function(l){
+    renderStats(l);
+    renderProxies(l);
+  }).catch(function(e){
+    toast('Error loading sessions: '+e,'danger');
+  });
+});
+
+}());
+</script>
+</body>
+</html>

@@ -176,8 +176,11 @@ Press Ctrl+C to stop the server. The dashboard includes:
 ## Manual
 
     anyip man                  # show this manual (English)
-    anyip man --language zh    # Chinese (中文)
-    anyip man --language ru    # Russian (Русский)
+    anyip man --fr             # French (Français)
+    anyip man --es             # Spanish (Español)
+    anyip man --zh             # Chinese (中文)
+    anyip man --ru             # Russian (Русский)
+    anyip man --language ja    # any other language via Claude
 
 ---
 

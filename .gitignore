@@ -2,3 +2,14 @@ node_modules/
 dist/
 *.js.map
 .DS_Store
+
+# Environment & secrets — never commit credentials
+.env
+.env.*
+*.local.env
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json

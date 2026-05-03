@@ -129,8 +129,32 @@ export function registerGenerateCommand(program: Command): void {
         }
         createSpinner.succeed(`Created ${created.length} proxies!`);
       } catch (e) {
-        createSpinner.fail(String(e));
-        return;
+        const status = (e as { status?: number }).status;
+        if (typeof status === "number" && status >= 500) {
+          createSpinner.text = "Server error — falling back to existing proxy accounts…";
+          created.length = 0;
+          try {
+            const { members } = await api.listProxies(anyipKey, { itemsPerPage: "100" });
+            if (members.length === 0) {
+              createSpinner.fail("No existing proxy accounts found. Create one with: anyip account create");
+              return;
+            }
+            const uniqueCount = Math.min(members.length, payloads.length);
+            const fullAccounts = await Promise.all(
+              members.slice(0, uniqueCount).map(m => api.getProxy(anyipKey, m.id))
+            );
+            for (let i = 0; i < payloads.length; i++) {
+              created.push(fullAccounts[i % fullAccounts.length]);
+            }
+            createSpinner.succeed(`Configured ${created.length} proxies from ${uniqueCount} existing account(s).`);
+          } catch (fallbackErr) {
+            createSpinner.fail(`Fallback failed: ${String(fallbackErr)}`);
+            return;
+          }
+        } else {
+          createSpinner.fail(String(e));
+          return;
+        }
       }
 
       // ── Save sessions locally ──────────────────────────────────────────────────

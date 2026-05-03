@@ -105,15 +105,23 @@ async function request<T>(
   }
 
   const isWrite = method === "POST" || method === "PUT" || method === "PATCH";
-  const res = await fetch(url.toString(), {
-    method,
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": isWrite ? "application/json" : "application/ld+json",
-      Accept: "application/ld+json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      signal: controller.signal,
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": isWrite ? "application/json" : "application/ld+json",
+        Accept: "application/ld+json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
