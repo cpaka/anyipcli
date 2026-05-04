@@ -200,11 +200,11 @@ anyip traffic export --from 2024-01-01 -o jan.csv
 Discover valid values for `--country`, `--region`, and ASN filtering:
 
 ```bash
-anyip data countries                # all available countries
-anyip data countries --json
-anyip data regions US               # states/regions for US
-anyip data regions FR --json
-anyip data asn US                   # ISP/carrier ASNs for US
+anyip country                       # all available countries
+anyip country --json
+anyip region US                     # states/regions for US
+anyip region FR --json
+anyip asn US                        # ISP/carrier ASNs for US
 ```
 
 ---
@@ -212,8 +212,8 @@ anyip data asn US                   # ISP/carrier ASNs for US
 ## 🔬 Quick Proxy Test
 
 ```bash
-anyip test 1     # test proxy account #1 — fetches live IP info via ip-api.com
-anyip test 3     # test account #3
+anyip check 1     # check proxy account #1 — fetches live IP info via ip-api.com
+anyip check 3     # check account #3
 ```
 
 Output shows the external IP, country, ISP, and city returned through the proxy.
@@ -327,7 +327,7 @@ http://user_ACCOUNT,type_residential,country_US,session_my_sess:PASSWORD@gate.an
 ```bash
 # Pipe JSON output to jq
 anyip account list --json | jq '.[] | {id, username, quota}'
-anyip data countries --json | jq '.[].value'
+anyip country --json | jq '.[].value'
 
 # Use env vars in CI — no config file needed
 ANYIP_API_KEY=$SECRET anyip traffic list --json > metrics.json
@@ -368,7 +368,7 @@ src/
 ├── commands/
 │   ├── account.ts        # anyip account ...
 │   ├── config.ts         # anyip config ...
-│   ├── data.ts           # anyip data ...
+│   ├── data.ts           # anyip country / region / asn
 │   ├── generate.ts       # anyip generate
 │   ├── man.ts            # anyip man
 │   ├── proxy.ts          # anyip get / anyip proxy ...
@@ -394,9 +394,9 @@ src/
 | `GET /api/proxy_accounts/:id` | `anyip account inspect` |
 | `PUT /api/proxy_accounts/:id` | `anyip account enable/disable` |
 | `PUT /api/proxy_accounts/bulk_reset` | `anyip account bulk-reset` |
-| `GET /api/data/country` | `anyip data countries` |
-| `GET /api/data/region/:country` | `anyip data regions` |
-| `GET /api/data/asn/:country` | `anyip data asn` |
+| `GET /api/data/country` | `anyip country` |
+| `GET /api/data/region/:country` | `anyip region` |
+| `GET /api/data/asn/:country` | `anyip asn` |
 | `GET /api/traffics` | `anyip traffic list` |
 | `GET /api/traffics/export` | `anyip traffic export` |
 
