@@ -227,8 +227,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
     <div class="tab-pane fade" id="manual">
       <div class="card stat-card p-4" style="max-width:860px">
         <div class="d-flex align-items-center gap-3 mb-4">
-          <i class="bi bi-book text-primary fs-5"></i>
-          <span class="fw-semibold">User Manual</span>
+          <span id="manualTitle" class="fw-semibold">Manual</span>
           <div class="ms-auto d-flex align-items-center gap-2">
             <span class="text-muted small">Language:</span>
             <div class="btn-group btn-group-sm" id="langSelector">
@@ -801,7 +800,12 @@ function loadManual(lang) {
   var el = document.getElementById('manualContent');
   el.innerHTML = '<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading…</div>';
   apiGet('/api/manual?lang=' + encodeURIComponent(lang)).then(function(data) {
-    el.innerHTML = '<div class="manual-body">' + renderManual(data.content) + '</div>';
+    var content = data.content;
+    var titleEl = document.getElementById('manualTitle');
+    var titleMatch = content.match(/^# (.+)/m);
+    if (titleEl) titleEl.textContent = titleMatch ? titleMatch[1] : 'Manual';
+    if (titleMatch) content = content.replace(/^# .+\n?/m, '');
+    el.innerHTML = '<div class="manual-body">' + renderManual(content) + '</div>';
   }).catch(function(e) {
     el.innerHTML = '<div class="alert alert-danger">Error loading manual: ' + esc(String(e)) + '</div>';
   });
