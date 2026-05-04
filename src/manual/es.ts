@@ -123,11 +123,11 @@ encuentra o crea una y la prueba con una verificación curl en vivo.
 
 ## Datos geográficos de referencia
 
-    anyip data countries               # todos los países disponibles
-    anyip data countries --json        # salida JSON
-    anyip data regions ES              # regiones disponibles para España
-    anyip data regions MX --json
-    anyip data asn ES                  # ASNs de ISP/operadores para España
+    anyip country                      # todos los países disponibles
+    anyip country --json               # salida JSON
+    anyip region ES                    # regiones disponibles para España
+    anyip region MX --json
+    anyip asn ES                       # ASNs de ISP/operadores para España
 
 Usa estos comandos para descubrir valores válidos para --country, --region y filtrado ASN.
 

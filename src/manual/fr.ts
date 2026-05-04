@@ -123,11 +123,11 @@ Les sessions sont des configurations de connexion proxy enregistrées localement
 
 ## Données géographiques de référence
 
-    anyip data countries               # tous les pays disponibles
-    anyip data countries --json        # sortie JSON
-    anyip data regions FR              # régions disponibles pour la France
-    anyip data regions US --json
-    anyip data asn FR                  # ASN des FAI/opérateurs pour la France
+    anyip country                      # tous les pays disponibles
+    anyip country --json               # sortie JSON
+    anyip region FR                    # régions disponibles pour la France
+    anyip region US --json
+    anyip asn FR                       # ASN des FAI/opérateurs pour la France
 
 Utilisez ces commandes pour découvrir les valeurs valides pour --country, --region et le filtrage ASN.
 

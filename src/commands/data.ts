@@ -6,10 +6,8 @@ import * as display from "../display.js";
 import { getAnyipKey } from "../config.js";
 
 export function registerDataCommands(program: Command): void {
-  const data = program.command("data").description("Geographic & ISP reference data");
-
-  data
-    .command("countries")
+  program
+    .command("country")
     .description("List available countries")
     .option("--json", "Output raw JSON")
     .action(async (opts: { json?: boolean }) => {
@@ -33,8 +31,8 @@ export function registerDataCommands(program: Command): void {
       }
     });
 
-  data
-    .command("regions <country>")
+  program
+    .command("region <country>")
     .description("List available regions for a country code (e.g. US)")
     .option("--json", "Output raw JSON")
     .action(async (country: string, opts: { json?: boolean }) => {
@@ -58,7 +56,7 @@ export function registerDataCommands(program: Command): void {
       }
     });
 
-  data
+  program
     .command("asn <country>")
     .description("List ISP/carrier ASNs for a country (e.g. US)")
     .option("--json", "Output raw JSON")

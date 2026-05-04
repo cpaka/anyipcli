@@ -121,10 +121,10 @@ anyIP.io предоставляет резидентные и мобильные
 
 ## Географические данные
 
-    anyip data countries               # список доступных стран
-    anyip data countries --json
-    anyip data regions US              # регионы/штаты для США
-    anyip data asn US                  # ASN провайдеров для США
+    anyip country                      # список доступных стран
+    anyip country --json
+    anyip region US                    # регионы/штаты для США
+    anyip asn US                       # ASN провайдеров для США
 
 Используйте эти команды для получения допустимых значений --country и --region.
 

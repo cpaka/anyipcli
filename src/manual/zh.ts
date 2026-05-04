@@ -120,10 +120,10 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 
 ## 地理数据查询
 
-    anyip data countries               # 所有可用国家列表
-    anyip data countries --json
-    anyip data regions US              # 美国可用的省/州列表
-    anyip data asn US                  # 美国的 ISP/运营商 ASN 列表
+    anyip country                      # 所有可用国家列表
+    anyip country --json
+    anyip region US                    # 美国可用的省/州列表
+    anyip asn US                       # 美国的 ISP/运营商 ASN 列表
 
 用于确认 --country、--region 等参数的有效值。
 

@@ -122,11 +122,11 @@ creates one and tests it with a live curl check.
 
 ## Geographic Reference Data
 
-    anyip data countries               # all available countries
-    anyip data countries --json        # JSON output
-    anyip data regions US              # regions/states available for US
-    anyip data regions FR --json
-    anyip data asn US                  # ISP/carrier ASNs for US
+    anyip country                      # all available countries
+    anyip country --json               # JSON output
+    anyip region US                    # regions/states available for US
+    anyip region FR --json
+    anyip asn US                       # ISP/carrier ASNs for US
 
 Use these to discover valid values for --country, --region, and ASN filtering.
 
