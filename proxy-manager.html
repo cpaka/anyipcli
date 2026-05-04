@@ -84,8 +84,9 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 
   <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
     <li class="nav-item">
-      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats" type="button">
-        <i class="bi bi-bar-chart-line me-1"></i> Stats
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#proxies" type="button">
+        <i class="bi bi-hdd-network me-1"></i> Proxies
+        <span id="proxyCountBadge" class="badge bg-secondary ms-1">0</span>
       </button>
     </li>
     <li class="nav-item">
@@ -94,9 +95,8 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
       </button>
     </li>
     <li class="nav-item">
-      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#proxies" type="button">
-        <i class="bi bi-hdd-network me-1"></i> Proxies
-        <span id="proxyCountBadge" class="badge bg-secondary ms-1">0</span>
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats" type="button">
+        <i class="bi bi-bar-chart-line me-1"></i> Stats
       </button>
     </li>
     <li class="nav-item">
@@ -109,7 +109,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
   <div class="tab-content">
 
     <!-- STATS -->
-    <div class="tab-pane fade show active" id="stats">
+    <div class="tab-pane fade" id="stats">
       <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
           <div class="card stat-card p-3">
@@ -166,7 +166,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
     </div>
 
     <!-- PROXIES -->
-    <div class="tab-pane fade" id="proxies">
+    <div class="tab-pane fade show active" id="proxies">
       <div class="filter-bar d-flex flex-wrap gap-2 align-items-center">
         <input type="text" class="form-control form-control-sm" id="searchInput"
           placeholder="Search name, country, tag…" style="max-width:280px" />
