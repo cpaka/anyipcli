@@ -61,15 +61,15 @@ program
     }
   });
 
-// ── test — quick proxy connectivity check ─────────────────────────────────────
+// ── check — quick proxy connectivity check ─────────────────────────────────────
 
 program
-  .command("test <number>")
-  .description("Test proxy account #N via curl → ip-api.com/json")
+  .command("check <number>")
+  .description("Check proxy account #N via curl → ip-api.com/json")
   .action(async (numStr: string) => {
     const n = parseInt(numStr, 10);
     if (isNaN(n) || n < 1) {
-      display.error("Provide a valid proxy number (e.g. anyip test 1)");
+      display.error("Provide a valid proxy number (e.g. anyip check 1)");
       process.exit(1);
     }
 

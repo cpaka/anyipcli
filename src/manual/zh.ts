@@ -131,7 +131,7 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 
 ## 快速代理测试
 
-    anyip test 1      # 测试第 1 个代理账户（通过 ip-api.com 获取 IP 信息）
+    anyip check 1     # 检查第 1 个代理账户（通过 ip-api.com 获取 IP 信息）
 
 ---
 

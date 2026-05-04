@@ -135,7 +135,7 @@ Usa estos comandos para descubrir valores válidos para --country, --region y fi
 
 ## Prueba rápida de proxy
 
-    anyip test 1      # probar la cuenta proxy n.º 1 — obtiene información IP via ip-api.com
+    anyip check 1     # comprobar la cuenta proxy n.º 1 — obtiene información IP via ip-api.com
 
 ---
 

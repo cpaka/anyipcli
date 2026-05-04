@@ -132,9 +132,9 @@ Use these to discover valid values for --country, --region, and ASN filtering.
 
 ---
 
-## Quick Proxy Test
+## Quick Proxy Check
 
-    anyip test 1      # test proxy account #1 — fetches IP info via ip-api.com
+    anyip check 1     # check proxy account #1 — fetches IP info via ip-api.com
 
 ---
 

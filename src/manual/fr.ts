@@ -135,7 +135,7 @@ Utilisez ces commandes pour découvrir les valeurs valides pour --country, --reg
 
 ## Test rapide de proxy
 
-    anyip test 1      # tester le compte proxy n°1 — récupère les infos IP via ip-api.com
+    anyip check 1     # vérifier le compte proxy n°1 — récupère les infos IP via ip-api.com
 
 ---
 
