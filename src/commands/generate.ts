@@ -86,28 +86,17 @@ export function registerGenerateCommand(program: Command): void {
 
       // ── Build all payloads ─────────────────────────────────────────────────────
       const payloads: Array<{ payload: api.CreateProxyPayload; item: ProxyPlanItem; idx: number }> = [];
+      // Targeting (type/country/session) is applied via username flags at
+      // connect time — the v1 account payload only carries quota and metadata.
       for (const item of plan.proxy_plan) {
         for (let i = 1; i <= item.count; i++) {
-          const portConfig: api.PortConfig = {};
-          if (item.type)    portConfig.type = item.type;
-          if (item.country) portConfig.country = item.country;
-          if (item.region)  portConfig.region = item.region;
-          if (!item.rotating && item.session_prefix)
-            portConfig.session = `${item.session_prefix}_${i}`;
-          if (item.sess_time != null) portConfig.sess_time = item.sess_time;
-
           payloads.push({
             item,
             idx: i,
             payload: {
               description: `${item.description} #${i}`,
               enabled: true,
-              quota: item.quota_bytes,
-              ip_whitelist: {
-                ips: [],
-                ports: Object.keys(portConfig).length > 0 ? [portConfig] : [],
-                is_enabled: false,
-              },
+              quota_bytes: item.quota_bytes,
             },
           });
         }
@@ -161,7 +150,7 @@ export function registerGenerateCommand(program: Command): void {
       let proxyIdx = 0;
       for (const { item, idx } of payloads) {
         const proxy = created[proxyIdx++];
-        if (!proxy?.plain_password) continue;
+        if (!proxy?.password) continue;
 
         const sessionName = item.rotating
           ? `gen_rotating_${Math.random().toString(16).slice(2, 8)}`
@@ -185,7 +174,7 @@ export function registerGenerateCommand(program: Command): void {
           server: "gate.anyip.io",
           port: 8080,
           username: compositeUsername,
-          password: proxy.plain_password,
+          password: proxy.password,
           country: item.country ?? undefined,
           region: item.region ?? undefined,
           sessTime: item.sess_time ?? undefined,
@@ -213,8 +202,8 @@ export function registerGenerateCommand(program: Command): void {
         for (let i = 0; i < item.count; i++) {
           const p = created[idx++];
           if (!p) break;
-          if (p.username && p.plain_password) {
-            lines.push(`http://${p.username}:${p.plain_password}@gate.anyip.io:8080`);
+          if (p.username && p.password) {
+            lines.push(`http://${p.username}:${p.password}@gate.anyip.io:8080`);
           } else {
             lines.push(`# ${p.username || p.id}  (password not returned — anyip account inspect ${p.id})`);
           }

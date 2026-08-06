@@ -56,7 +56,12 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     }
 
     if (path === "/api/me" && method === "GET") {
-      return json(res, 200, await api.getMe(key));
+      const [me, usage, subscription] = await Promise.all([
+        api.getMe(key),
+        api.getTeamUsage(key).catch(() => undefined),
+        api.getSubscription(key).catch(() => undefined),
+      ]);
+      return json(res, 200, { ...me, usage, subscription });
     }
 
     if (path === "/api/accounts" && method === "GET") {
@@ -66,18 +71,28 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     if (path === "/api/accounts" && method === "POST") {
       const raw = (await readBody(req)) as Record<string, unknown>;
-      // Extract dashboard-only field before forwarding to API
+      // Dashboard-only fields (not part of the v1 API payload)
       const connectionType = (raw._connectionType as string | undefined) ?? "http";
-      delete raw._connectionType;
+      const spec = (raw._spec as {
+        type?: "residential" | "mobile";
+        country?: string;
+        session?: string;
+        sess_time?: number;
+      } | undefined) ?? {};
 
-      const proxy = await api.createProxy(key, raw as api.CreateProxyPayload);
+      const proxy = await api.createProxy(key, {
+        description: raw.description as string | undefined,
+        enabled: (raw.enabled as boolean | undefined) ?? true,
+        password: raw.password as string | undefined,
+        quota_bytes: raw.quota_bytes as number | undefined,
+      });
 
-      // Auto-save as local session if the API returns credentials
-      if (proxy.username && proxy.plain_password) {
-        const portCfg = (raw.ip_whitelist as api.IpWhitelist | undefined)?.ports?.[0];
-        const networkType = portCfg?.type ?? "residential";
-        const country = portCfg?.country;
-        const sessionName = portCfg?.session;
+      // Auto-save as local session if the API returns credentials.
+      // Targeting is applied via username flags, which the network still honors.
+      if (proxy.username && proxy.password) {
+        const networkType = spec.type ?? "residential";
+        const country = spec.country;
+        const sessionName = spec.session;
         const isRotating = !sessionName;
         const port = connectionType === "socks5" ? 1080 : 8080;
 
@@ -86,7 +101,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
           "type_" + networkType,
           country    ? "country_"  + country    : null,
           sessionName ? "session_" + sessionName : null,
-          portCfg?.sess_time ? "sesstime_" + portCfg.sess_time : null,
+          spec.sess_time ? "sesstime_" + spec.sess_time : null,
         ].filter(Boolean).join(",");
 
         sessions.saveSession({
@@ -96,9 +111,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
           server: "portal.anyip.io",
           port,
           username: userParts,
-          password: proxy.plain_password,
+          password: proxy.password,
           country,
-          sessTime: portCfg?.sess_time,
+          sessTime: spec.sess_time,
           rotating: isRotating,
           createdAt: new Date().toISOString(),
           userTag: proxy.username,

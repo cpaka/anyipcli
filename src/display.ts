@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import Table from "cli-table3";
-import type { ProxyAccount, User, Traffic } from "./api.js";
+import type { ProxyAccount, User, TrafficPoint, Usage, Subscription } from "./api.js";
 import type { ProxySession } from "./sessions.js";
 import { buildCurlCommand, buildProxyUrl, resolveUserTag } from "./sessions.js";
 
@@ -43,7 +43,7 @@ export function printUsersTable(proxies: ProxyAccount[]): void {
       chalk.white(`user_${p.username ?? "—"}`),
       chalk.dim(p.description ?? "—"),
       statusBadge(p),
-      fmtBytes(p.consumption),
+      fmtBytes(p.consumption_bytes ?? undefined),
     ]);
   });
 
@@ -72,8 +72,8 @@ export function printProxiesTable(proxies: ProxyAccount[]): void {
       chalk.white(p.username ?? "—"),
       chalk.dim(p.description ?? "—"),
       statusBadge(p),
-      fmtBytes(p.quota),
-      fmtBytes(p.consumption),
+      p.quota_bytes ? fmtBytes(p.quota_bytes) : chalk.dim("team"),
+      fmtBytes(p.consumption_bytes ?? undefined),
     ]);
   }
 
@@ -93,35 +93,16 @@ export function printProxyCard(p: ProxyAccount): void {
   row("Username", chalk.yellow(p.username ?? "—"));
   row("Description", p.description ?? "—");
   row("Status", statusBadge(p));
-  row("Quota", fmtBytes(p.quota));
-  row("Used", fmtBytes(p.consumption));
-  row("Recv / Sent", `${fmtBytes(p.bytes_recv)} / ${fmtBytes(p.bytes_sent)}`);
-
-  if (p.ip_whitelist?.ports?.length) {
-    console.log(`\n  ${chalk.dim("Ports:")}`);
-    for (const port of p.ip_whitelist.ports) {
-      const parts = [
-        port.port && chalk.yellow(`:${port.port}`),
-        port.type && chalk.cyan(port.type),
-        port.country && `country=${chalk.white(port.country)}`,
-        port.city && `city=${chalk.white(port.city)}`,
-        port.session && `session=${chalk.white(port.session)}`,
-        port.sess_time && `sesstime=${port.sess_time}min`,
-      ].filter(Boolean);
-      console.log(`    ${parts.join("  ")}`);
-    }
-  }
-
-  if (p.ip_whitelist?.ips?.length) {
-    console.log(`\n  ${chalk.dim("Whitelisted IPs:")} ${p.ip_whitelist.ips.join(", ")}`);
-  }
+  row("Quota", p.quota_bytes ? fmtBytes(p.quota_bytes) : chalk.dim("team quota"));
+  row("Used", fmtBytes(p.consumption_bytes ?? undefined));
+  if (p.last_activity_at) row("Last activity", chalk.dim(p.last_activity_at.slice(0, 10)));
 
   // Proxy URL
-  if (p.username && p.plain_password) {
+  if (p.username && p.password) {
     console.log(`\n  ${chalk.dim("Proxy URL:")}`);
     console.log(
       chalk.green(
-        `  http://${p.username}:${p.plain_password}@gate.anyip.io:8080`
+        `  http://${p.username}:${p.password}@gate.anyip.io:8080`
       )
     );
   }
@@ -129,7 +110,7 @@ export function printProxyCard(p: ProxyAccount): void {
 }
 
 // ── User card ──────────────────────────────────────────────────────────────────
-export function printUserCard(u: User): void {
+export function printUserCard(u: User, usage?: Usage, sub?: Subscription): void {
   const sep = chalk.gray("─".repeat(52));
   console.log(`\n${sep}`);
   console.log(chalk.bold.cyan("  Account Info"));
@@ -137,26 +118,35 @@ export function printUserCard(u: User): void {
   const row = (label: string, val: string) =>
     console.log(`  ${chalk.dim(label.padEnd(20))} ${val}`);
   row("Email", chalk.white(u.email ?? "—"));
-  row("Username", chalk.yellow(u.username ?? "—"));
-  row("Quota", fmtBytes(u.quota));
-  row("Used", fmtBytes(u.consumption));
+  if (u.default_team?.name) row("Team", chalk.white(u.default_team.name));
+  if (sub?.plan?.name) {
+    row("Plan", chalk.yellow(sub.plan.name) + (sub.status ? chalk.dim(`  (${sub.status})`) : ""));
+    if (sub.valid_until) row("Valid until", chalk.white(sub.valid_until.slice(0, 10)));
+  }
+  if (usage) {
+    row("Quota", fmtBytes(usage.quota_bytes));
+    row("Used", fmtBytes(usage.consumption_bytes));
+    row("Remaining", chalk.green(fmtBytes(usage.remaining_bytes)));
+    row("Proxy accounts", `${usage.proxy_accounts_used} / ${usage.proxy_account_quota}`);
+  }
   console.log(sep + "\n");
 }
 
 // ── Traffic table ──────────────────────────────────────────────────────────────
-export function printTrafficTable(items: Traffic[]): void {
+export function printTrafficTable(items: TrafficPoint[]): void {
   const table = new Table({
-    head: [chalk.cyan("Date"), chalk.cyan("Consumed"), chalk.cyan("Requests")],
+    head: [chalk.cyan("Date"), chalk.cyan("Sent"), chalk.cyan("Received"), chalk.cyan("Total")],
     style: { head: [], border: ["gray"] },
-    colWidths: [14, 16, 12],
+    colWidths: [22, 14, 14, 14],
     wordWrap: true,
   });
   for (const t of items) {
-    const date = t._id?.date ?? t.date ?? "—";
+    const date = t.timestamp ? t.timestamp.replace("T", " ").slice(0, 16) : "—";
     table.push([
       chalk.dim(date),
-      fmtBytes(t.total_consumed),
-      chalk.white(String(t.nb_requests ?? 0)),
+      fmtBytes(t.bytes_sent),
+      fmtBytes(t.bytes_recv),
+      chalk.white(fmtBytes(t.bytes_sent + t.bytes_recv)),
     ]);
   }
   console.log(table.toString());

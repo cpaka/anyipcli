@@ -4,7 +4,7 @@ import ora from "ora";
 import * as api from "../api.js";
 import * as display from "../display.js";
 import { getAnyipKey } from "../config.js";
-import { ask, buildPortConfig, portConfigToPayload } from "../utils.js";
+import { ask, buildProxySpec, specHasTargeting, specToProfile } from "../utils.js";
 
 export function registerAccountCommands(program: Command): void {
   const account = program
@@ -37,11 +37,15 @@ export function registerAccountCommands(program: Command): void {
       const spinner = ora("Fetching account…").start();
       try {
         const user = await api.getMe(anyipKey);
+        const [usage, sub] = await Promise.all([
+          api.getTeamUsage(anyipKey),
+          api.getSubscription(anyipKey).catch(() => undefined),
+        ]);
         spinner.stop();
         if (opts.json) {
-          console.log(JSON.stringify(user, null, 2));
+          console.log(JSON.stringify({ user, usage, subscription: sub }, null, 2));
         } else {
-          display.printUserCard(user);
+          display.printUserCard(user, usage, sub);
         }
       } catch (e) {
         spinner.fail(formatError(e));
@@ -104,13 +108,14 @@ export function registerAccountCommands(program: Command): void {
 
   account
     .command("create")
-    .description("Create a proxy account")
+    .description("Create a proxy account (and a proxy profile if targeting options are given)")
     .requiredOption("-d, --description <desc>", "Proxy description")
     .option("--type <type>", "Network type: residential | mobile")
     .option("--country <code>", "Country ISO code (e.g. US, FR)")
     .option("--region <name>", "Region/state name")
     .option("--city <name>", "City name")
-    .option("--session <name>", "Sticky session name")
+    .option("--asn <number>", "ISP/carrier ASN number")
+    .option("--session <name>", "Sticky session (kept for compat — enables sticky mode)")
     .option("--sess-time <min>", "Sticky session duration in minutes")
     .option("--quota <bytes>", "Bandwidth quota in bytes", "1073741824")
     .option("--password <pass>", "Custom password (auto-generated if omitted)")
@@ -121,6 +126,7 @@ export function registerAccountCommands(program: Command): void {
       country?: string;
       region?: string;
       city?: string;
+      asn?: string;
       session?: string;
       sessTime?: string;
       quota?: string;
@@ -128,21 +134,33 @@ export function registerAccountCommands(program: Command): void {
       json?: boolean;
     }) => {
       const anyipKey = getAnyipKey();
-      const pc = buildPortConfig(opts);
-      const payload = portConfigToPayload(pc, {
-        description: opts.description,
-        quota: parseInt(opts.quota ?? "1073741824", 10),
-        password: opts.password,
-      });
+      const spec = buildProxySpec(opts);
 
       const spinner = ora("Creating proxy account…").start();
       try {
-        const proxy = await api.createProxy(anyipKey, payload);
+        const proxy = await api.createProxy(anyipKey, {
+          description: opts.description,
+          enabled: true,
+          quota_bytes: parseInt(opts.quota ?? "1073741824", 10),
+          password: opts.password,
+        });
+
+        // Location/session targeting moved to proxy profiles in API v1
+        let profile: api.ProxyProfile | undefined;
+        if (specHasTargeting(spec)) {
+          spinner.text = "Creating proxy profile…";
+          profile = await api.createProfile(
+            anyipKey,
+            specToProfile(spec, opts.description, proxy.id)
+          );
+        }
+
         spinner.stop();
         if (opts.json) {
-          console.log(JSON.stringify(proxy, null, 2));
+          console.log(JSON.stringify(profile ? { account: proxy, profile } : proxy, null, 2));
         } else {
           display.success("Proxy account created!");
+          if (profile) display.success(`Proxy profile "${profile.name}" created (id: ${profile.id})`);
           display.printProxyCard(proxy);
         }
       } catch (e) {
@@ -179,6 +197,45 @@ export function registerAccountCommands(program: Command): void {
     });
 
   account
+    .command("reset <id>")
+    .description("Reset bandwidth quota for one proxy account")
+    .action(async (id: string) => {
+      const anyipKey = getAnyipKey();
+      const spinner = ora("Resetting quota…").start();
+      try {
+        await api.resetQuota(anyipKey, id);
+        spinner.succeed("Quota reset");
+      } catch (e) {
+        spinner.fail(formatError(e));
+      }
+    });
+
+  account
+    .command("delete <id>")
+    .alias("rm")
+    .description("Delete a proxy account")
+    .option("-y, --yes", "Skip confirmation prompt")
+    .action(async (id: string, opts: { yes?: boolean }) => {
+      if (!opts.yes) {
+        const confirm = await ask(
+          `  ${chalk.yellow(`Delete proxy account ${id}?`)} [y/N] `
+        );
+        if (confirm.trim().toLowerCase() !== "y") {
+          display.info("Aborted.");
+          return;
+        }
+      }
+      const anyipKey = getAnyipKey();
+      const spinner = ora("Deleting…").start();
+      try {
+        await api.deleteProxy(anyipKey, id);
+        spinner.succeed("Proxy account deleted");
+      } catch (e) {
+        spinner.fail(formatError(e));
+      }
+    });
+
+  account
     .command("bulk-reset")
     .description("Reset bandwidth quota for all proxy accounts")
     .option("-y, --yes", "Skip confirmation prompt")
@@ -195,8 +252,8 @@ export function registerAccountCommands(program: Command): void {
       const anyipKey = getAnyipKey();
       const spinner = ora("Resetting all quotas…").start();
       try {
-        await api.bulkResetQuota(anyipKey);
-        spinner.succeed("All quotas reset");
+        const count = await api.bulkResetQuota(anyipKey);
+        spinner.succeed(`Quota reset for ${count} account(s)`);
       } catch (e) {
         spinner.fail(formatError(e));
       }

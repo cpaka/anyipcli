@@ -130,6 +130,8 @@ anyip account create \
 
 anyip account enable <id>
 anyip account disable <id>
+anyip account reset <id>             # reset one account's bandwidth quota
+anyip account delete <id>            # delete an account (asks for confirmation)
 anyip account bulk-reset             # ⚠️ resets ALL quotas — asks for confirmation
 anyip account bulk-reset --yes       # skip confirmation (safe for scripts)
 ```
@@ -142,10 +144,15 @@ anyip account bulk-reset --yes       # skip confirmation (safe for scripts)
 | `--country` | ISO code: `US`, `FR`, `DE`, `TH`… |
 | `--region` | State/region slug: `california`, `texas`… |
 | `--city` | City slug: `paris`, `dallas`… |
-| `--session` | Sticky session name (alphanumeric + `_`) |
+| `--asn` | ISP/carrier ASN number |
+| `--session` | Sticky session (any targeting option creates a proxy profile) |
 | `--sess-time` | Session duration in minutes (1–10080) |
 | `--quota` | Bandwidth limit in bytes (default: 1 GB) |
 | `--password` | Custom password (auto-generated if omitted) |
+
+Targeting options (`--type`, `--country`, `--region`, `--city`, `--asn`,
+`--session`, `--sess-time`) are saved as a **proxy profile** attached to the
+new account — that's where location/session configuration lives in API v1.
 
 ---
 
@@ -182,15 +189,20 @@ anyip proxy clear                   # wipe all sessions (asks for confirmation)
 ## 📊 Traffic & Usage
 
 ```bash
-anyip traffic list                           # recent traffic grouped by day
-anyip traffic list --from 2024-01-01         # filter by start date
-anyip traffic list --to   2024-01-31         # filter by end date
-anyip traffic list --proxy <id>              # filter by proxy account
+anyip traffic list                           # sent/received per day (last 30 days)
+anyip traffic list --from 2026-01-01         # filter by start date
+anyip traffic list --to   2026-01-31         # filter by end date
+anyip traffic list --interval hourly         # hourly resolution (default: daily)
+anyip traffic list --proxy <id>              # filter by proxy account (repeatable)
 anyip traffic list --json                    # JSON output
+
+anyip traffic usage                          # team quota: used / remaining / accounts
+anyip traffic usage --proxy <id>             # one account's usage
+anyip traffic usage --json
 
 anyip traffic export                         # print CSV to stdout
 anyip traffic export -o traffic.csv          # save to file
-anyip traffic export --from 2024-01-01 -o jan.csv
+anyip traffic export --from 2026-01-01 -o jan.csv
 ```
 
 ---
@@ -386,19 +398,27 @@ src/
 
 ## 📋 API Coverage
 
+Uses the anyIP **Public API v1** (team-scoped, `/api/v1/teams/{team_id}/…`). The
+team id is resolved automatically from your API key and cached locally.
+
 | Endpoint | CLI command |
 |----------|-------------|
-| `GET /api/users/me` | `anyip account me` |
-| `GET /api/proxy_accounts` | `anyip account list` |
-| `POST /api/proxy_accounts` | `anyip account create` / `anyip generate` |
-| `GET /api/proxy_accounts/:id` | `anyip account inspect` |
-| `PUT /api/proxy_accounts/:id` | `anyip account enable/disable` |
-| `PUT /api/proxy_accounts/bulk_reset` | `anyip account bulk-reset` |
+| `GET /api/users/me` | `anyip account me` (+ team id discovery) |
+| `GET /api/v1/teams/:t/usage` | `anyip account me` / `anyip traffic usage` |
+| `GET /api/v1/teams/:t/subscription` | `anyip account me` |
+| `GET /api/v1/teams/:t/proxy_accounts` | `anyip account list` |
+| `POST /api/v1/teams/:t/proxy_accounts` | `anyip account create` / `anyip generate` |
+| `GET /api/v1/teams/:t/proxy_accounts/:id` | `anyip account inspect` |
+| `PUT /api/v1/teams/:t/proxy_accounts/:id` | `anyip account enable/disable` |
+| `DELETE /api/v1/teams/:t/proxy_accounts/:id` | `anyip account delete` |
+| `POST /api/v1/teams/:t/proxy_accounts/:id/reset-quota` | `anyip account reset` |
+| `POST /api/v1/teams/:t/proxy_accounts/reset-quota` | `anyip account bulk-reset` |
+| `POST /api/v1/teams/:t/proxy_profiles` | `anyip account create` (with targeting options) |
+| `GET /api/v1/teams/:t/proxy_accounts/:id/usage` | `anyip traffic usage --proxy` |
+| `GET /api/v1/teams/:t/traffic` | `anyip traffic list` / `anyip traffic export` |
 | `GET /api/data/country` | `anyip country` |
 | `GET /api/data/region/:country` | `anyip region` |
 | `GET /api/data/asn/:country` | `anyip asn` |
-| `GET /api/traffics` | `anyip traffic list` |
-| `GET /api/traffics/export` | `anyip traffic export` |
 
 ---
 

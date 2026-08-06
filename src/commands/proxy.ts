@@ -121,7 +121,7 @@ export function registerGetCommand(program: Command): void {
           process.exit(1);
         }
 
-        if (!fullProxy.plain_password) {
+        if (!fullProxy.password) {
           display.error("Password not available — recreate the proxy account via the dashboard.");
           process.exit(1);
         }
@@ -154,7 +154,7 @@ export function registerGetCommand(program: Command): void {
           server: "portal.anyip.io",
           port,
           username: userParts,
-          password: fullProxy.plain_password,
+          password: fullProxy.password,
           country,
           city,
           sessTime: sessTimeVal,

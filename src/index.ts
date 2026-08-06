@@ -23,7 +23,7 @@ const program = new Command();
 program
   .name("anyip")
   .description(chalk.cyan("anyIP.io CLI") + " — Manage proxies from your terminal")
-  .version("1.0.0");
+  .version("2.0.0");
 
 // ── Register all command groups ────────────────────────────────────────────────
 
@@ -87,12 +87,12 @@ program
       const proxy = await api.getProxy(anyipKey, entry.id);
       spinner.stop();
 
-      if (!proxy.plain_password) {
+      if (!proxy.password) {
         display.error("Password not available — recreate the proxy account via the dashboard.");
         return;
       }
 
-      const proxyUrl = `http://user_${proxy.username}:${proxy.plain_password}@portal.anyip.io:1080`;
+      const proxyUrl = `http://user_${proxy.username}:${proxy.password}@portal.anyip.io:1080`;
       console.log(chalk.dim(`  #${n}  user_${proxy.username}  ${proxy.description ?? ""}`));
       console.log();
 

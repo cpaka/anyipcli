@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import type { PortConfig } from "./api.js";
+import type { ProxyProfile } from "./api.js";
 
 // ── Interactive prompts ────────────────────────────────────────────────────────
 
@@ -49,43 +49,70 @@ export function askSecret(question: string): Promise<string> {
   });
 }
 
-// ── Shared proxy builder ───────────────────────────────────────────────────────
+// ── Shared proxy targeting spec ────────────────────────────────────────────────
+// In API v1 the location/session configuration lives in a proxy *profile*
+// attached to a proxy account (it used to be a port config on the account).
 
-export function buildPortConfig(opts: {
+export interface ProxySpec {
+  type?: "residential" | "mobile";
+  country?: string;
+  region?: string;
+  city?: string;
+  asn?: number;
+  sticky?: boolean;      // sticky session vs rotating
+  sessTime?: number;     // sticky duration in minutes
+}
+
+export function buildProxySpec(opts: {
   type?: string;
   country?: string;
   region?: string;
   city?: string;
+  asn?: string | number;
   session?: string;
   sessTime?: string | number;
-}): PortConfig {
-  const pc: PortConfig = {};
-  if (opts.type)     pc.type = opts.type as "residential" | "mobile";
-  if (opts.country)  pc.country = opts.country.toUpperCase();
-  if (opts.region)   pc.region = opts.region.toLowerCase();
-  if (opts.city)     pc.city = opts.city.toLowerCase();
-  if (opts.session)  pc.session = opts.session;
+}): ProxySpec {
+  const spec: ProxySpec = {};
+  if (opts.type)     spec.type = opts.type as "residential" | "mobile";
+  if (opts.country)  spec.country = opts.country.toUpperCase();
+  if (opts.region)   spec.region = opts.region.toLowerCase();
+  if (opts.city)     spec.city = opts.city.toLowerCase();
+  if (opts.asn != null) {
+    spec.asn = typeof opts.asn === "string" ? parseInt(opts.asn, 10) : opts.asn;
+  }
+  if (opts.session)  spec.sticky = true;
   if (opts.sessTime != null) {
-    pc.sess_time = typeof opts.sessTime === "string"
+    spec.sticky = true;
+    spec.sessTime = typeof opts.sessTime === "string"
       ? parseInt(opts.sessTime, 10)
       : opts.sessTime;
   }
-  return pc;
+  return spec;
 }
 
-export function portConfigToPayload(
-  pc: PortConfig,
-  opts: { description: string; quota: number; password?: string }
-) {
+export function specHasTargeting(spec: ProxySpec): boolean {
+  return !!(spec.type || spec.country || spec.region || spec.city || spec.asn || spec.sticky);
+}
+
+export function specToProfile(
+  spec: ProxySpec,
+  name: string,
+  proxyAccountId: string
+): ProxyProfile {
   return {
-    description: opts.description,
-    enabled: true as const,
-    quota: opts.quota,
-    plain_password: opts.password,
-    ip_whitelist: {
-      ips: [] as string[],
-      ports: Object.keys(pc).length > 0 ? [pc] : [],
-      is_enabled: false,
+    name,
+    proxy_account_id: proxyAccountId,
+    proxy_type: spec.type ?? null,
+    auth_method: "usernamePassword",
+    proxy_protocol: "http",
+    location: {
+      country_code: spec.country ?? null,
+      region: spec.region ?? null,
+      city: spec.city ?? null,
+      asn: spec.asn ?? null,
     },
+    session: spec.sticky
+      ? { type: "sticky", duration: spec.sessTime ?? 10080 }
+      : { type: "rotating", duration: null },
   };
 }

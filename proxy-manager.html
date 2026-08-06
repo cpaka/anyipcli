@@ -487,9 +487,9 @@ function loadUser() {
 /* ── Navbar ─────────────────────────────────────────────────────────────────── */
 function initNavbar() {
   loadUser().then(function(u) {
-    var sub = u.subscription || {};
-    var used = sub.consumption || u.consumption || 0;
-    var quota = sub.current_quota || u.quota || 0;
+    var usage = u.usage || {};
+    var used = usage.consumption_bytes || 0;
+    var quota = usage.quota_bytes || 0;
     document.getElementById('navStatus').innerHTML =
       '<i class="bi bi-person-check-fill text-success"></i> ' + esc(u.email || u.username || 'Account') +
       (used ? ' &nbsp;&middot;&nbsp; ' + fmtBytes(used) + ' used' : '') +
@@ -537,9 +537,9 @@ function renderAccountTab() {
   Promise.all([loadUser(), loadAccounts()]).then(function(results) {
     var user = results[0];
     var accounts = results[1];
-    var sub = user.subscription || {};
-    var used = sub.consumption || user.consumption || 0;
-    var quota = sub.current_quota || user.quota || 0;
+    var usage = user.usage || {};
+    var used = usage.consumption_bytes || 0;
+    var quota = usage.quota_bytes || 0;
 
     var userCard = '<div class="card stat-card p-4 mb-4" style="max-width:640px">' +
       '<div class="d-flex align-items-center gap-3">' +
@@ -562,7 +562,7 @@ function renderAccountTab() {
         if (!p.enabled) statusBadge = '<span class="badge bg-secondary">Disabled</span>';
         else if (p.status === 'ACCOUNT_BLOCKED') statusBadge = '<span class="badge bg-danger">Blocked</span>';
         else statusBadge = '<span class="badge badge-soft">Active</span>';
-        var u2 = p.consumption||p.bytes_recv||0, q2 = p.quota||0;
+        var u2 = p.consumption_bytes||0, q2 = p.quota_bytes||0;
         return '<tr><td class="ps-3"><code class="text-muted" style="font-size:.78rem">'+esc(p.id.slice(-8))+'</code></td>' +
           '<td><strong class="text-primary">'+esc(p.username||'—')+'</strong></td>' +
           '<td class="text-muted small">'+esc(p.description||'')+'</td>' +
@@ -910,19 +910,19 @@ function handleGenerate() {
     (function(idx){
       chain=chain.then(function(){
         var sessName=sessionType==='sticky'?(qty>1?baseName+'-'+(idx+1):baseName):null;
-        var portCfg={};
-        if(networkType) portCfg.type=networkType;
-        if(country) portCfg.country=country;
-        if(sessName) portCfg.session=sessName;
+        var spec={};
+        if(networkType) spec.type=networkType;
+        if(country) spec.country=country;
+        if(sessName) spec.session=sessName;
         var desc=label?(qty>1?label+' #'+(idx+1):label):
           (networkType+' '+(sessionType==='rotating'?'rotating':'sticky')+(country?' - '+country:''));
         var body={
           description:desc,
           enabled:true,
           _connectionType:connType,
-          ip_whitelist:{ips:[],ports:Object.keys(portCfg).length?[portCfg]:[],is_enabled:false},
+          _spec:spec,
         };
-        if(proxyPwd) body.plain_password=proxyPwd;
+        if(proxyPwd) body.password=proxyPwd;
         progText.textContent='Creating '+(idx+1)+' of '+qty+'…';
         progBar.style.width=((idx/qty)*100)+'%';
         return apiPost('/api/accounts',body).then(function(){created++;}).catch(function(){failed++;});

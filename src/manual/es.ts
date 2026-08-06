@@ -110,7 +110,9 @@ encuentra o crea una y la prueba con una verificación curl en vivo.
 
 ## Monitoreo de tráfico
 
-    anyip traffic list                            # tráfico reciente agrupado por día
+    anyip traffic list                            # enviado/recibido por día (últimos 30 días)
+    anyip traffic list --interval hourly          # resolución horaria
+    anyip traffic usage                           # cuota del equipo: usado / restante
     anyip traffic list --from 2024-01-01          # filtrar por fecha de inicio
     anyip traffic list --to 2024-01-31            # filtrar por fecha de fin
     anyip traffic list --proxy <id>               # filtrar por ID de cuenta proxy

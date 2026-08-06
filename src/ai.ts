@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { CreateProxyPayload, PortConfig } from "./api.js";
+import type { CreateProxyPayload } from "./api.js";
+import type { ProxySpec } from "./utils.js";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -101,38 +102,46 @@ const SYSTEM_PROMPT = `You are an expert assistant for anyIP.io proxy management
 
 When a user describes what they want in natural language, you extract structured proxy configuration from it.
 
-## anyIP Port Config Schema
+## anyIP Proxy Config Schema
 - type: "residential" | "mobile"  (residential = broadband/WiFi, mobile = 4G/5G)
 - country: ISO 3166-1 alpha-2 (e.g. "US", "FR", "DE", "TH")
 - region: state or region name lowercase (e.g. "texas", "california", "ile-de-france")
 - city: city name lowercase (e.g. "paris", "dallas", "berlin")
-- session: alphanumeric session name for sticky IP (e.g. "ig_client1")
+- asn: ISP/carrier ASN number (integer) if a specific ISP is requested
+- sticky: true = keep the same IP per session; false = rotate IP per request
 - sess_time: sticky duration in minutes (1-10080, default 10080 = 7 days)
-- sess_replace: false = fail instead of rotating when IP drops
-- sess_ip_collision: "strict" = prevent two sessions from sharing same IP
 
 ## Response format
 Respond ONLY with valid JSON, no markdown, no explanation:
 {
   "description": "short human-readable description of what this proxy does",
-  "quota": <bytes as integer, default 1073741824 = 1GB if not specified>,
-  "port_config": {
+  "quota_bytes": <bytes as integer, default 1073741824 = 1GB if not specified>,
+  "proxy_config": {
     "type": "residential"|"mobile"|null,
     "country": "XX"|null,
     "region": "name"|null,
     "city": "name"|null,
-    "session": "name"|null,
-    "sess_time": <int>|null,
-    "sess_replace": <bool>|null,
-    "sess_ip_collision": "strict"|null
+    "asn": <int>|null,
+    "sticky": <bool>,
+    "sess_time": <int>|null
   },
   "clarification_needed": null | "what extra info would help"
 }`;
 
+interface NLProxyConfig {
+  type?: "residential" | "mobile" | null;
+  country?: string | null;
+  region?: string | null;
+  city?: string | null;
+  asn?: number | null;
+  sticky?: boolean | null;
+  sess_time?: number | null;
+}
+
 interface NLResult {
   description: string;
-  quota: number;
-  port_config: Partial<PortConfig>;
+  quota_bytes: number;
+  proxy_config: NLProxyConfig;
   clarification_needed: string | null;
 }
 
@@ -154,27 +163,26 @@ export async function parseNaturalLanguage(claudeKey: string, prompt: string): P
   return parseJsonResponse<NLResult>(text, "parseNaturalLanguage");
 }
 
-export function nlResultToPayload(result: NLResult): CreateProxyPayload {
-  const pc = result.port_config;
-  const port: PortConfig = {};
-  if (pc.type)                 port.type = pc.type;
-  if (pc.country)              port.country = pc.country;
-  if (pc.region)               port.region = pc.region;
-  if (pc.city)                 port.city = pc.city;
-  if (pc.session)              port.session = pc.session;
-  if (pc.sess_time != null)    port.sess_time = pc.sess_time;
-  if (pc.sess_replace != null) port.sess_replace = pc.sess_replace;
-  if (pc.sess_ip_collision)    port.sess_ip_collision = pc.sess_ip_collision;
+// v1 splits creation in two: the account payload, plus a profile spec that
+// carries the location/session targeting (see utils.specToProfile).
+export function nlResultToPayload(result: NLResult): { account: CreateProxyPayload; spec: ProxySpec } {
+  const pc = result.proxy_config;
+  const spec: ProxySpec = {};
+  if (pc.type)              spec.type = pc.type;
+  if (pc.country)           spec.country = pc.country;
+  if (pc.region)            spec.region = pc.region;
+  if (pc.city)              spec.city = pc.city;
+  if (pc.asn != null)       spec.asn = pc.asn;
+  if (pc.sticky != null)    spec.sticky = pc.sticky;
+  if (pc.sess_time != null) { spec.sticky = true; spec.sessTime = pc.sess_time; }
 
   return {
-    description: result.description,
-    enabled: true,
-    quota: result.quota ?? 1_073_741_824,
-    ip_whitelist: {
-      ips: [],
-      ports: Object.keys(port).length > 0 ? [port] : [],
-      is_enabled: false,
+    account: {
+      description: result.description,
+      enabled: true,
+      quota_bytes: result.quota_bytes ?? 1_073_741_824,
     },
+    spec,
   };
 }
 

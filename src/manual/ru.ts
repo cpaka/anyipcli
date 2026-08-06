@@ -109,7 +109,9 @@ anyIP.io предоставляет резидентные и мобильные
 
 ## Мониторинг трафика
 
-    anyip traffic list                            # трафик по дням
+    anyip traffic list                            # отправлено/получено по дням (последние 30 дней)
+    anyip traffic list --interval hourly          # почасовая детализация
+    anyip traffic usage                           # квота команды: использовано / осталось
     anyip traffic list --from 2024-01-01          # с указанной даты
     anyip traffic list --to 2024-01-31            # по указанную дату
     anyip traffic list --proxy <id>               # фильтр по аккаунту прокси

@@ -4,6 +4,8 @@ interface AppConfig {
   anyipKey?: string;
   claudeKey?: string;
   userToken?: string;
+  teamId?: string;
+  teamIdForKey?: string;
 }
 
 export const config = new Conf<AppConfig>({
@@ -12,6 +14,9 @@ export const config = new Conf<AppConfig>({
     anyipKey: { type: "string" },
     claudeKey: { type: "string" },
     userToken: { type: "string" },
+    // v1 API team scope, cached per API key (see api.getTeamId)
+    teamId: { type: "string" },
+    teamIdForKey: { type: "string" },
   },
 });
 

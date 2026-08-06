@@ -110,7 +110,9 @@ Les sessions sont des configurations de connexion proxy enregistrées localement
 
 ## Surveillance du trafic
 
-    anyip traffic list                            # trafic récent groupé par jour
+    anyip traffic list                            # envoyé/reçu par jour (30 derniers jours)
+    anyip traffic list --interval hourly          # résolution horaire
+    anyip traffic usage                           # quota d'équipe : utilisé / restant
     anyip traffic list --from 2024-01-01          # filtrer par date de début
     anyip traffic list --to 2024-01-31            # filtrer par date de fin
     anyip traffic list --proxy <id>               # filtrer par identifiant de compte proxy

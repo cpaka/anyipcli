@@ -108,7 +108,9 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 
 ## 流量监控
 
-    anyip traffic list                            # 按天分组显示近期流量
+    anyip traffic list                            # 每日发送/接收流量（最近 30 天）
+    anyip traffic list --interval hourly          # 按小时统计
+    anyip traffic usage                           # 团队配额：已用 / 剩余
     anyip traffic list --from 2024-01-01          # 按起始日期筛选
     anyip traffic list --to 2024-01-31            # 按截止日期筛选
     anyip traffic list --proxy <id>               # 按代理账户 ID 筛选

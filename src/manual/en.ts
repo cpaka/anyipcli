@@ -109,7 +109,9 @@ creates one and tests it with a live curl check.
 
 ## Traffic Monitoring
 
-    anyip traffic list                            # recent traffic grouped by day
+    anyip traffic list                            # sent/received per day (last 30 days)
+    anyip traffic list --interval hourly          # hourly resolution
+    anyip traffic usage                           # team quota: used / remaining
     anyip traffic list --from 2024-01-01          # filter by start date
     anyip traffic list --to 2024-01-31            # filter by end date
     anyip traffic list --proxy <id>               # filter by proxy account ID
