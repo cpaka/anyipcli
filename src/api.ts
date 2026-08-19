@@ -99,6 +99,11 @@ export interface Region {
   value: string;  // lowercase slug, e.g. "california"
 }
 
+export interface City {
+  name: string;
+  value: string;  // lowercase slug, e.g. "losangeles"
+}
+
 export interface AsnEntry {
   name: string;
   value: number;  // ASN number
@@ -252,6 +257,15 @@ export async function getCountries(apiKey: string): Promise<Country[]> {
 
 export async function getRegions(apiKey: string, country: string): Promise<Region[]> {
   return request<Region[]>(apiKey, "GET", `/api/data/region/${country}`);
+}
+
+// The API requires both a country code and a region slug.
+export async function getCities(
+  apiKey: string,
+  country: string,
+  region: string
+): Promise<City[]> {
+  return request<City[]>(apiKey, "GET", `/api/data/city/${country}/${region}`);
 }
 
 export async function getAsn(apiKey: string, country: string): Promise<AsnEntry[]> {

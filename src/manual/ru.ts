@@ -126,6 +126,8 @@ anyIP.io предоставляет резидентные и мобильные
     anyip country                      # список доступных стран
     anyip country --json
     anyip region US                    # регионы/штаты для США
+    anyip city US california           # города региона (название или слаг)
+    anyip city US                      # все города страны, по регионам
     anyip asn US                       # ASN провайдеров для США
 
 Используйте эти команды для получения допустимых значений --country и --region.

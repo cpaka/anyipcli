@@ -125,6 +125,8 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     anyip country                      # 所有可用国家列表
     anyip country --json
     anyip region US                    # 美国可用的省/州列表
+    anyip city US california           # 某个省/州的城市（名称或 slug 均可）
+    anyip city US                      # 按省/州列出全国城市
     anyip asn US                       # 美国的 ISP/运营商 ASN 列表
 
 用于确认 --country、--region 等参数的有效值。

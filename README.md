@@ -216,6 +216,9 @@ anyip country                       # all available countries
 anyip country --json
 anyip region US                     # states/regions for US
 anyip region FR --json
+anyip city US california            # cities in a region
+anyip city US "New York"            # region name or slug both work
+anyip city FR                       # every city in the country, by region
 anyip asn US                        # ISP/carrier ASNs for US
 ```
 
@@ -380,7 +383,7 @@ src/
 ├── commands/
 │   ├── account.ts        # anyip account ...
 │   ├── config.ts         # anyip config ...
-│   ├── data.ts           # anyip country / region / asn
+│   ├── data.ts           # anyip country / region / city / asn
 │   ├── generate.ts       # anyip generate
 │   ├── man.ts            # anyip man
 │   ├── proxy.ts          # anyip get / anyip proxy ...
@@ -418,6 +421,7 @@ team id is resolved automatically from your API key and cached locally.
 | `GET /api/v1/teams/:t/traffic` | `anyip traffic list` / `anyip traffic export` |
 | `GET /api/data/country` | `anyip country` |
 | `GET /api/data/region/:country` | `anyip region` |
+| `GET /api/data/city/:country/:region` | `anyip city` |
 | `GET /api/data/asn/:country` | `anyip asn` |
 
 ---

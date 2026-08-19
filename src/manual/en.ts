@@ -128,9 +128,12 @@ creates one and tests it with a live curl check.
     anyip country --json               # JSON output
     anyip region US                    # regions/states available for US
     anyip region FR --json
+    anyip city US california           # cities in a region (name or slug)
+    anyip city FR                      # every city in a country, by region
     anyip asn US                       # ISP/carrier ASNs for US
 
-Use these to discover valid values for --country, --region, and ASN filtering.
+Use these to discover valid values for --country, --region, --city, and ASN
+filtering.
 
 ---
 
