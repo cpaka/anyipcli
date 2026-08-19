@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import Table from "cli-table3";
-import type { ProxyAccount, User, TrafficPoint, Usage, Subscription } from "./api.js";
+import type { ProxyAccount, User, TrafficPoint, Usage, Subscription, City, Region } from "./api.js";
 import type { ProxySession } from "./sessions.js";
 import { buildCurlCommand, buildProxyUrl, resolveUserTag } from "./sessions.js";
 
@@ -239,6 +239,32 @@ export function printIpInfo(info: Record<string, unknown>): void {
 }
 
 // ── Header ─────────────────────────────────────────────────────────────────────
+// ── Cities table ───────────────────────────────────────────────────────────────
+// One row per city; the slug under each name is the value for --region/--city.
+export function printCitiesTable(
+  groups: Array<{ region: Region; cities: City[] }>
+): void {
+  const table = new Table({
+    head: [chalk.cyan("Region"), chalk.cyan("City")],
+    colAligns: ["left", "left"],
+    style: { head: [], border: ["gray"] },
+    colWidths: [30, 30],
+    wordWrap: true,
+  });
+
+  for (const g of groups) {
+    for (const c of g.cities) {
+      table.push([
+        // Repeating the region on every row keeps each row independently readable.
+        chalk.white(g.region.name) + chalk.dim(`\n${g.region.value}`),
+        chalk.white(c.name) + chalk.dim(`\n${c.value}`),
+      ]);
+    }
+  }
+
+  console.log(table.toString());
+}
+
 export function printHeader(title: string): void {
   console.log();
   console.log(chalk.bold.cyan(`  ⬡  anyIP CLI  `) + chalk.dim(`— ${title}`));

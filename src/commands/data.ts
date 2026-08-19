@@ -122,12 +122,17 @@ export function registerDataCommands(program: Command): void {
             ? `Loading cities for ${targets[0].name}…`
             : `Loading cities for ${targets.length} regions in ${code}…`;
 
-        const groups = await mapLimit(targets, 8, async (r) => ({
-          region: r,
-          cities: await api.getCities(anyipKey, code, r.value).catch(() => [] as api.City[]),
-        }));
+        // A failed region must not look like an empty one, or the totals lie.
+        const groups = await mapLimit(targets, 8, async (r) => {
+          try {
+            return { region: r, cities: await api.getCities(anyipKey, code, r.value) };
+          } catch (e) {
+            return { region: r, cities: [] as api.City[], error: String(e) };
+          }
+        });
         spinner.stop();
 
+        const failed = groups.filter((g) => g.error);
         const found = groups.filter((g) => g.cities.length > 0);
         const total = found.reduce((n, g) => n + g.cities.length, 0);
 
@@ -149,23 +154,30 @@ export function registerDataCommands(program: Command): void {
         );
 
         if (total === 0) {
-          console.log(chalk.dim("  No cities available\n"));
+          console.log(
+            failed.length === targets.length
+              ? chalk.yellow(`  Could not load any region — ${failed[0].error}\n`)
+              : chalk.dim("  No cities available\n")
+          );
           return;
         }
 
-        found.forEach((g) => {
-          if (!region) console.log(chalk.cyan(`\n  ${g.region.name}`));
-          g.cities.forEach((c) => {
-            console.log(`  ${chalk.yellow(c.value.padEnd(22))} ${chalk.white(c.name)}`);
-          });
-        });
+        display.printCitiesTable(found);
         console.log(
           chalk.dim(
             `\n  ${total} ${total === 1 ? "city" : "cities"}` +
-              (region ? "" : ` across ${found.length} of ${regions.length} regions`) +
-              "\n"
+              (region ? "" : ` across ${found.length} of ${regions.length} regions`)
           )
         );
+        if (failed.length > 0) {
+          console.log(
+            chalk.yellow(
+              `  ${failed.length} region(s) failed to load: ` +
+                failed.map((g) => g.region.value).join(", ")
+            )
+          );
+        }
+        console.log();
       } catch (e) {
         spinner.fail(String(e));
       }
