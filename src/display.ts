@@ -239,30 +239,30 @@ export function printIpInfo(info: Record<string, unknown>): void {
 }
 
 // ── Header ─────────────────────────────────────────────────────────────────────
-// ── Cities table ───────────────────────────────────────────────────────────────
-// One row per city; the slug under each name is the value for --region/--city.
-export function printCitiesTable(
+// ── Cities list ────────────────────────────────────────────────────────────────
+// One row per city, region repeated, so each line stands alone when grepped.
+// Slugs match the names lowercased with punctuation stripped, so they are shown
+// only on the rare row where that does not hold.
+export function printCitiesList(
   groups: Array<{ region: Region; cities: City[] }>
 ): void {
-  const table = new Table({
-    head: [chalk.cyan("Region"), chalk.cyan("City")],
-    colAligns: ["left", "left"],
-    style: { head: [], border: ["gray"] },
-    colWidths: [30, 30],
-    wordWrap: true,
-  });
+  const slug = (v: string) =>
+    v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const label = (name: string, value: string) =>
+    slug(name) === value ? name : `${name} (${value})`;
 
-  for (const g of groups) {
-    for (const c of g.cities) {
-      table.push([
-        // Repeating the region on every row keeps each row independently readable.
-        chalk.white(g.region.name) + chalk.dim(`\n${g.region.value}`),
-        chalk.white(c.name) + chalk.dim(`\n${c.value}`),
-      ]);
-    }
+  const rows = groups.flatMap((g) =>
+    g.cities.map((c) => ({
+      region: label(g.region.name, g.region.value),
+      city: label(c.name, c.value),
+    }))
+  );
+  const width = Math.max(6, ...rows.map((r) => r.region.length)) + 3;
+
+  console.log(chalk.cyan(`  ${"Region".padEnd(width)}City`));
+  for (const r of rows) {
+    console.log(`  ${chalk.white(r.region.padEnd(width))}${chalk.white(r.city)}`);
   }
-
-  console.log(table.toString());
 }
 
 export function printHeader(title: string): void {

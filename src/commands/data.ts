@@ -162,11 +162,12 @@ export function registerDataCommands(program: Command): void {
           return;
         }
 
-        display.printCitiesTable(found);
+        display.printCitiesList(found);
         console.log(
           chalk.dim(
             `\n  ${total} ${total === 1 ? "city" : "cities"}` +
-              (region ? "" : ` across ${found.length} of ${regions.length} regions`)
+              (region ? "" : ` across ${found.length} of ${regions.length} regions`) +
+              " — pass the lowercase form, e.g. --region texas --city dallas"
           )
         );
         if (failed.length > 0) {
