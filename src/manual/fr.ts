@@ -131,6 +131,7 @@ Les sessions sont des configurations de connexion proxy enregistrées localement
     anyip region US --json
     anyip city FR "Île-de-France"      # villes d'une région (nom ou slug)
     anyip city FR                      # toutes les villes du pays, par région
+    anyip city FR --tags               # region_iledefrance,city_paris (étiquettes)
     anyip asn FR                       # ASN des FAI/opérateurs pour la France
 
 Utilisez ces commandes pour découvrir les valeurs valides pour --country, --region et le filtrage ASN.

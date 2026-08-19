@@ -131,6 +131,7 @@ encuentra o crea una y la prueba con una verificación curl en vivo.
     anyip region MX --json
     anyip city ES madrid               # ciudades de una región (nombre o slug)
     anyip city ES                      # todas las ciudades del país, por región
+    anyip city ES --tags               # region_madrid,city_madrid (etiquetas)
     anyip asn ES                       # ASNs de ISP/operadores para España
 
 Usa estos comandos para descubrir valores válidos para --country, --region y filtrado ASN.

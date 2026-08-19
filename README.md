@@ -219,6 +219,8 @@ anyip region FR --json
 anyip city US california            # cities in a region
 anyip city US "New York"            # region name or slug both work
 anyip city FR                       # every city in the country, by region
+anyip city US --tags                # region_texas,city_dallas — username tags
+anyip city US texas --json
 anyip asn US                        # ISP/carrier ASNs for US
 ```
 

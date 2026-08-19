@@ -89,7 +89,12 @@ export function registerDataCommands(program: Command): void {
     .command("city <country> [region]")
     .description("List available cities for a region, or for a whole country (e.g. US california)")
     .option("--json", "Output raw JSON")
-    .action(async (country: string, region: string | undefined, opts: { json?: boolean }) => {
+    .option("--tags", "Output proxy username tags: region_<region>,city_<city>")
+    .action(async (
+      country: string,
+      region: string | undefined,
+      opts: { json?: boolean; tags?: boolean }
+    ) => {
       const anyipKey = getAnyipKey();
       const code = country.toUpperCase();
       const spinner = ora(`Loading regions for ${code}…`).start();
@@ -136,16 +141,31 @@ export function registerDataCommands(program: Command): void {
         const found = groups.filter((g) => g.cities.length > 0);
         const total = found.reduce((n, g) => n + g.cities.length, 0);
 
+        // Username tag segments, ready to paste into a proxy username.
+        const tag = (regionValue: string, cityValue: string) =>
+          `region_${regionValue},city_${cityValue}`;
+
         if (opts.json) {
           console.log(
             JSON.stringify(
               found.flatMap((g) =>
-                g.cities.map((c) => ({ ...c, region: g.region.value }))
+                g.cities.map((c) => ({
+                  ...c,
+                  region: g.region.value,
+                  ...(opts.tags ? { tag: tag(g.region.value, c.value) } : {}),
+                }))
               ),
               null,
               2
             )
           );
+          return;
+        }
+
+        if (opts.tags) {
+          found.forEach((g) => {
+            g.cities.forEach((c) => console.log(tag(g.region.value, c.value)));
+          });
           return;
         }
 
