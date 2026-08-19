@@ -209,19 +209,69 @@ anyip traffic export --from 2026-01-01 -o jan.csv
 
 ## 🌍 Geographic Reference Data
 
-Discover valid values for `--country`, `--region`, and ASN filtering:
+Discover valid values for `--country`, `--region`, `--city`, and ASN filtering:
 
 ```bash
 anyip country                       # all available countries
 anyip country --json
 anyip region US                     # states/regions for US
 anyip region FR --json
-anyip city US california            # cities in a region
-anyip city US "New York"            # region name or slug both work
-anyip city FR                       # every city in the country, by region
-anyip city US --tags                # region_texas,city_dallas — username tags
-anyip city US texas --json
 anyip asn US                        # ISP/carrier ASNs for US
+```
+
+### Cities
+
+The region argument is optional. Given one, the input is matched against that
+country's region list, so the display name and the slug both work:
+
+```bash
+anyip city US california
+anyip city US "New York"            # → newyork
+```
+
+Omit it and every region of the country is queried, then listed together:
+
+```bash
+$ anyip city US
+
+  Region           City
+  Arizona          Phoenix
+  California       Los Angeles
+  Florida          Miami
+  Georgia          Atlanta
+  Illinois         Chicago
+  New York         New York
+  North Carolina   Charlotte
+  Pennsylvania     Philadelphia
+  Texas            Dallas
+  Texas            Houston
+
+  10 cities across 9 of 45 regions — pass the lowercase form, e.g. --region texas --city dallas
+```
+
+The region repeats on every row so each line stands alone when grepped. Slugs
+are the names lowercased with punctuation stripped, and are printed explicitly
+on any row where that does not hold.
+
+City coverage is sparse — most regions return no cities at all (9 of 45 US
+states, 3 of 10 French regions). That is the upstream data, not a truncated
+result; a region that fails to load is reported separately rather than being
+counted as empty.
+
+**`--tags`** emits the [username attribute](#embedding-options-in-the-username)
+form instead, one per line, ready to paste into a proxy username:
+
+```bash
+$ anyip city US texas --tags
+region_texas,city_dallas
+region_texas,city_houston
+```
+
+**`--json`** returns a flat array with the region on each city; add `--tags`
+alongside it to include the same string as a `tag` field:
+
+```bash
+anyip city FR --json | jq -r '.[] | "\(.region)/\(.value)"'
 ```
 
 ---
@@ -345,6 +395,11 @@ http://user_ACCOUNT,type_residential,country_US,session_my_sess:PASSWORD@gate.an
 # Pipe JSON output to jq
 anyip account list --json | jq '.[] | {id, username, quota}'
 anyip country --json | jq '.[].value'
+
+# Build a proxy username targeting every available city in a country
+for tag in $(anyip city US --tags); do
+  echo "user_$ACCOUNT,type_residential,country_us,$tag"
+done
 
 # Use env vars in CI — no config file needed
 ANYIP_API_KEY=$SECRET anyip traffic list --json > metrics.json
