@@ -130,7 +130,7 @@ creates one and tests it with a live curl check.
     anyip region FR --json
     anyip city US california           # cities in a region (name or slug)
     anyip city FR                      # every city in a country, by region
-    anyip city US --tags               # region_texas,city_dallas (username tags)
+    anyip city US --tags               # country_US,region_texas,city_dallas (username flags)
     anyip asn US                       # ISP/carrier ASNs for US
 
 Use these to discover valid values for --country, --region, --city, and ASN

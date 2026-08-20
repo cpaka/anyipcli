@@ -258,13 +258,19 @@ states, 3 of 10 French regions). That is the upstream data, not a truncated
 result; a region that fails to load is reported separately rather than being
 counted as empty.
 
-**`--tags`** emits the [username attribute](#embedding-options-in-the-username)
-form instead, one per line, ready to paste into a proxy username:
+**`--tags`** (alias `--flag`) emits the
+[username attribute](#embedding-options-in-the-username) form instead, one per
+line, ready to paste into a proxy username. The country is included because
+`region_`/`city_` are only honoured when `country_` is set:
 
 ```bash
 $ anyip city US texas --tags
-region_texas,city_dallas
-region_texas,city_houston
+country_US,region_texas,city_dallas
+country_US,region_texas,city_houston
+
+# drop it straight into a username
+$ anyip city US texas --tags | head -1 | xargs -I{} echo "user_$ACCOUNT,type_residential,{}"
+user_1234,type_residential,country_US,region_texas,city_dallas
 ```
 
 **`--json`** returns a flat array with the region on each city; add `--tags`
@@ -398,7 +404,7 @@ anyip country --json | jq '.[].value'
 
 # Build a proxy username targeting every available city in a country
 for tag in $(anyip city US --tags); do
-  echo "user_$ACCOUNT,type_residential,country_us,$tag"
+  echo "user_$ACCOUNT,type_residential,$tag"
 done
 
 # Use env vars in CI — no config file needed

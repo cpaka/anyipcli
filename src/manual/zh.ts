@@ -127,7 +127,7 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     anyip region US                    # 美国可用的省/州列表
     anyip city US california           # 某个省/州的城市（名称或 slug 均可）
     anyip city US                      # 按省/州列出全国城市
-    anyip city US --tags               # region_texas,city_dallas（用户名标签）
+    anyip city US --tags               # country_US,region_texas,city_dallas（用户名标签）
     anyip asn US                       # 美国的 ISP/运营商 ASN 列表
 
 用于确认 --country、--region 等参数的有效值。

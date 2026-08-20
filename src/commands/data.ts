@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import * as api from "../api.js";
@@ -89,14 +89,19 @@ export function registerDataCommands(program: Command): void {
     .command("city <country> [region]")
     .description("List available cities for a region, or for a whole country (e.g. US california)")
     .option("--json", "Output raw JSON")
-    .option("--tags", "Output proxy username tags: region_<region>,city_<city>")
+    .option(
+      "--tags",
+      "Output proxy username flags: country_<CC>,region_<region>,city_<city>"
+    )
+    .addOption(new Option("--flag", "Alias of --tags").hideHelp())
     .action(async (
       country: string,
       region: string | undefined,
-      opts: { json?: boolean; tags?: boolean }
+      opts: { json?: boolean; tags?: boolean; flag?: boolean }
     ) => {
       const anyipKey = getAnyipKey();
       const code = country.toUpperCase();
+      const wantTags = !!(opts.tags || opts.flag);
       const spinner = ora(`Loading regions for ${code}…`).start();
       try {
         const regions = await api.getRegions(anyipKey, code);
@@ -141,9 +146,11 @@ export function registerDataCommands(program: Command): void {
         const found = groups.filter((g) => g.cities.length > 0);
         const total = found.reduce((n, g) => n + g.cities.length, 0);
 
-        // Username tag segments, ready to paste into a proxy username.
+        // Username flag segments, ready to paste into a proxy username. The
+        // country comes first because region/city are only honoured when the
+        // country is set — a bare region_/city_ pair is ignored upstream.
         const tag = (regionValue: string, cityValue: string) =>
-          `region_${regionValue},city_${cityValue}`;
+          `country_${code},region_${regionValue},city_${cityValue}`;
 
         if (opts.json) {
           console.log(
@@ -152,7 +159,7 @@ export function registerDataCommands(program: Command): void {
                 g.cities.map((c) => ({
                   ...c,
                   region: g.region.value,
-                  ...(opts.tags ? { tag: tag(g.region.value, c.value) } : {}),
+                  ...(wantTags ? { tag: tag(g.region.value, c.value) } : {}),
                 }))
               ),
               null,
@@ -162,7 +169,7 @@ export function registerDataCommands(program: Command): void {
           return;
         }
 
-        if (opts.tags) {
+        if (wantTags) {
           found.forEach((g) => {
             g.cities.forEach((c) => console.log(tag(g.region.value, c.value)));
           });

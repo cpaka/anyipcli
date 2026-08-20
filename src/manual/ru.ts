@@ -128,7 +128,7 @@ anyIP.io предоставляет резидентные и мобильные
     anyip region US                    # регионы/штаты для США
     anyip city US california           # города региона (название или слаг)
     anyip city US                      # все города страны, по регионам
-    anyip city US --tags               # region_texas,city_dallas (теги username)
+    anyip city US --tags               # country_US,region_texas,city_dallas (теги username)
     anyip asn US                       # ASN провайдеров для США
 
 Используйте эти команды для получения допустимых значений --country и --region.
