@@ -274,17 +274,19 @@ export function printFlagTable(
 ): void {
   if (rows.length === 0) return;
 
+  // Cap VALUE: one row listing four ASNs or regions must not squeeze WHY into
+  // a two-word column for every other row.
   const flagW = Math.max(4, ...rows.map((r) => r.flag.length)) + 2;
-  const valueW = Math.max(5, ...rows.map((r) => r.value.length)) + 2;
-  const total = (process.stdout.columns ?? 100) - indent.length - flagW - valueW;
-  const whyW = Math.max(30, Math.min(total, 70));
+  const valueW = Math.min(Math.max(5, ...rows.map((r) => r.value.length)), 26) + 2;
+  const room = (process.stdout.columns ?? 100) - indent.length - flagW - valueW;
+  const whyW = Math.max(30, Math.min(room, 70));
 
-  const wrap = (text: string): string[] => {
+  const wrap = (text: string, width: number): string[] => {
     const out: string[] = [];
     let line = "";
     for (const word of text.split(/\s+/)) {
       if (!line) line = word;
-      else if (line.length + 1 + word.length <= whyW) line += ` ${word}`;
+      else if (line.length + 1 + word.length <= width) line += ` ${word}`;
       else { out.push(line); line = word; }
     }
     if (line) out.push(line);
@@ -295,15 +297,15 @@ export function printFlagTable(
     indent + chalk.cyan("FLAG".padEnd(flagW) + "VALUE".padEnd(valueW) + "WHY IT IS THERE")
   );
   for (const r of rows) {
-    const lines = wrap(r.why);
-    console.log(
-      indent +
-        chalk.yellow(r.flag.padEnd(flagW)) +
-        chalk.white(r.value.padEnd(valueW)) +
-        chalk.dim(lines[0] ?? "")
-    );
-    for (const extra of lines.slice(1)) {
-      console.log(indent + " ".repeat(flagW + valueW) + chalk.dim(extra));
+    const values = wrap(r.value, valueW - 2);
+    const whys = wrap(r.why, whyW);
+    for (let i = 0; i < Math.max(values.length, whys.length); i++) {
+      console.log(
+        indent +
+          chalk.yellow((i === 0 ? r.flag : "").padEnd(flagW)) +
+          chalk.white((values[i] ?? "").padEnd(valueW)) +
+          chalk.dim(whys[i] ?? "")
+      );
     }
   }
 }
