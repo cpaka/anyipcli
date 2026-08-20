@@ -61,6 +61,11 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 .manual-body ul { padding-left: 1.25rem; }
 .manual-body a { color: var(--brand); }
 
+.cell-icon { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; font-size: .85rem; }
+.session-name { font-size: .82rem; background: var(--brand-light); color: var(--brand-dark);
+  padding: 2px 6px; border-radius: 4px; }
+.row-actions { white-space: nowrap; }
+.row-actions .btn + .btn { margin-left: .25rem; }
 .settings-section { font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
   color: #6c757d; font-weight: 700; }
 .color-field { display: flex; align-items: center; gap: .5rem; }
@@ -199,6 +204,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           <option value="hostuser">host:port:user:pass</option>
           <option value="userhost">user:pass@host:port</option>
           <option value="http">http://user:pass@host:port</option>
+          <option value="https">https://user:pass@host:port</option>
           <option value="socks5">socks5://user:pass@host:port</option>
         </select>
         <div class="ms-auto d-flex gap-2">
@@ -220,6 +226,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
             <thead>
               <tr>
                 <th class="ps-3">Network</th>
+                <th>Type</th>
                 <th>Session</th>
                 <th>Conn</th>
                 <th>Location</th>
@@ -314,8 +321,9 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           <label class="col-sm-3 col-form-label">Connection type :</label>
           <div class="col-sm-9">
             <div class="toggle-group" data-field="connectionType">
-              <button type="button" class="toggle-btn active" data-value="http">HTTP proxy</button>
-              <button type="button" class="toggle-btn" data-value="socks5">SOCKS5 proxy</button>
+              <button type="button" class="toggle-btn active" data-value="http">HTTP</button>
+              <button type="button" class="toggle-btn" data-value="https">HTTPS</button>
+              <button type="button" class="toggle-btn" data-value="socks5">SOCKS5</button>
             </div>
           </div>
         </div>
@@ -384,6 +392,30 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" id="generateBtn">
           <i class="bi bi-magic"></i> Generate
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-1"></i> Delete proxy</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1">Remove <code id="deleteTarget"></code> from your saved proxies?</p>
+        <p class="text-muted small mb-0">
+          The proxy account itself stays on anyIP — only the locally saved entry goes away.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="deleteConfirmBtn">
+          <i class="bi bi-trash"></i> Delete
         </button>
       </div>
     </div>
@@ -541,6 +573,7 @@ var COUNTRIES = [
 var state = {
   sessions: null, user: null, accountsLoaded: false, manualLoaded: false,
   settings: null, themeTouched: {}, clearKeys: { anyipKey:false, claudeKey:false },
+  pendingDelete: null,
 };
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
@@ -750,6 +783,7 @@ function buildProxyStr(s, fmt) {
   var u=s.username, pw=s.password, h=s.server, p=s.port;
   if (fmt==='userhost') return u+':'+pw+'@'+h+':'+p;
   if (fmt==='http')     return 'http://'+u+':'+pw+'@'+h+':'+p;
+  if (fmt==='https')    return 'https://'+u+':'+pw+'@'+h+':'+p;
   if (fmt==='socks5')   return 'socks5://'+u+':'+pw+'@'+h+':'+p;
   return h+':'+p+':'+u+':'+pw;
 }
@@ -793,11 +827,14 @@ function renderProxies(list) {
   tbody.innerHTML = view.map(function(s) {
     var str = buildProxyStr(s, fmt);
     var net = s.networkType==='mobile'
-      ? '<span class="badge badge-soft"><i class="bi bi-phone"></i> Mobile</span>'
-      : '<span class="badge badge-soft"><i class="bi bi-house-wifi"></i> Residential</span>';
+      ? '<span class="cell-icon"><i class="bi bi-phone text-primary"></i> Mobile</span>'
+      : '<span class="cell-icon"><i class="bi bi-house-door text-primary"></i> Residential</span>';
+    var type = s.rotating
+      ? '<span class="cell-icon"><i class="bi bi-arrow-repeat text-primary"></i> Rotating</span>'
+      : '<span class="cell-icon"><i class="bi bi-pause-circle text-primary"></i> Sticky</span>';
     var ses = s.rotating
-      ? '<span class="badge bg-light text-dark border">Rotating</span>'
-      : '<span class="badge bg-light text-dark border">Sticky &middot; '+esc(s.name)+'</span>';
+      ? '<span class="text-muted small text-nowrap">per request</span>'
+      : '<code class="session-name">'+esc(s.name)+'</code>';
     var conn = '<span class="badge bg-secondary text-uppercase">'+esc(s.connectionType||'http')+'</span>';
     var loc = s.country
       ? '<span class="badge bg-light text-dark border"><i class="bi bi-geo-alt"></i> '+esc(s.country)+'</span>'
@@ -805,14 +842,14 @@ function renderProxies(list) {
     var tag = s.userTag ? '<div class="text-muted" style="font-size:.75rem">'+esc(s.userTag)+'</div>' : '';
     return '<tr>' +
       '<td class="ps-3">'+net+tag+'</td>' +
-      '<td>'+ses+'</td><td>'+conn+'</td><td>'+loc+'</td>' +
+      '<td>'+type+'</td><td>'+ses+'</td><td>'+conn+'</td><td>'+loc+'</td>' +
       '<td><code>'+esc(str)+'</code></td>' +
       '<td><span class="text-muted small" title="'+esc(s.createdAt||'')+'">'+timeAgo(s.createdAt)+'</span></td>' +
-      '<td class="text-end pe-3">' +
+      '<td class="text-end pe-3 row-actions">' +
+        '<button class="btn btn-sm btn-outline-primary copy-row" data-v="'+esc(str)+'" title="Copy"><i class="bi bi-clipboard"></i></button>' +
         (s.rotating
-          ? '<button class="btn btn-sm btn-outline-secondary me-1" disabled title="This proxy already gets a new IP on every connection"><i class="bi bi-arrow-repeat"></i></button>'
-          : '<button class="btn btn-sm btn-outline-primary me-1 rotate-row" data-n="'+esc(s.name)+'" title="Change IP — rotate this sticky session"><i class="bi bi-arrow-repeat"></i></button>') +
-        '<button class="btn btn-sm btn-outline-primary me-1 copy-row" data-v="'+esc(str)+'" title="Copy"><i class="bi bi-clipboard"></i></button>' +
+          ? '<button class="btn btn-sm btn-outline-secondary" disabled title="This proxy already gets a new IP on every connection"><i class="bi bi-arrow-repeat"></i></button>'
+          : '<button class="btn btn-sm btn-outline-primary rotate-row" data-n="'+esc(s.name)+'" title="Change IP — rotate this sticky session"><i class="bi bi-arrow-repeat"></i></button>') +
         '<button class="btn btn-sm btn-outline-danger del-row" data-n="'+esc(s.name)+'" title="Delete"><i class="bi bi-trash"></i></button>' +
       '</td></tr>';
   }).join('');
@@ -841,17 +878,36 @@ function renderProxies(list) {
     });
   });
   tbody.querySelectorAll('.del-row').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var n=btn.dataset.n;
-      if(!confirm('Delete session "'+n+'"?')) return;
-      apiDelete('/api/sessions/'+encodeURIComponent(n)).then(function(){
-        state.sessions=null;
-        loadSessions(true).then(function(l){ renderStats(l); renderProxies(l); });
-        toast('Deleted "'+n+'"');
-      }).catch(function(e){toast('Error: '+e,'danger');});
+    btn.addEventListener('click',function(){ confirmDelete(btn.dataset.n); });
+  });
+}
+/* Native confirm() blocks the page and looks nothing like the rest of the UI. */
+function confirmDelete(name) {
+  state.pendingDelete = name;
+  document.getElementById('deleteTarget').textContent = name;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).show();
+}
+
+function initDeleteModal() {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', function(){
+    var n = state.pendingDelete;
+    if (!n) return;
+    var btn = this;
+    btn.disabled = true;
+    apiDelete('/api/sessions/'+encodeURIComponent(n)).then(function(){
+      state.sessions = null;
+      loadSessions(true).then(function(l){ renderStats(l); renderProxies(l); });
+      toast('Deleted "'+n+'"');
+    }).catch(function(e){
+      toast('Error: '+e,'danger');
+    }).then(function(){
+      btn.disabled = false;
+      state.pendingDelete = null;
+      bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
     });
   });
 }
+
 function initProxiesTab() {
   ['searchInput','filterNetwork','filterSession','formatSelect'].forEach(function(id){
     var el=document.getElementById(id);
@@ -1329,6 +1385,7 @@ document.addEventListener('DOMContentLoaded',function(){
   initManualTab();
   initModal();
   initSettings();
+  initDeleteModal();
   initNavbar();
 
   loadSettings().then(function(s){ applyTheme(s.theme); }).catch(function(){ /* keep defaults */ });

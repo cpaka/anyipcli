@@ -384,6 +384,9 @@ Press `Ctrl+C` to stop.
 - 📋 Proxy account table with enable/disable toggles
 - ➕ New proxy creation form (HTTP or SOCKS5, sticky or rotating, by country)
 - 🔄 **Change IP** — rotate any sticky session from its row (see below)
+- 🎛️ Network, session type and session name each in their own column, with
+  HTTP / HTTPS / SOCKS5 selectable both when creating a proxy and in the
+  proxy-string format picker
 - ⚙️ **Settings** — API keys and dashboard colours, next to *+ New Proxy*
 - 📈 Stats breakdown by network type, connection type, and location
 - 📋 Copy / export proxy strings in any format
@@ -430,8 +433,13 @@ anyip man --language Japanese  # any other language — generated via Claude
 
 ```
 http://USERNAME:PASSWORD@gate.anyip.io:8080      ← HTTP proxy
+https://USERNAME:PASSWORD@portal.anyip.io:443    ← HTTPS proxy
 socks5://USERNAME:PASSWORD@portal.anyip.io:1080  ← SOCKS5 proxy
 ```
+
+anyIP answers HTTP, HTTPS and SOCKS5 on the same host — the
+[quick start](https://anyip.io/docs/guides/quick-start) gives `portal.anyip.io`
+on `1080` or `443` — so the protocol you pick is whichever your client speaks.
 
 ### Embedding options in the username
 anyIP lets you pass connection options directly in the username field (comma-separated):

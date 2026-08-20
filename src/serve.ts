@@ -82,6 +82,14 @@ function applyTheme(value: unknown): void {
   else config.set("theme", merged);
 }
 
+// portal.anyip.io answers HTTP, HTTPS and SOCKS5; only the port differs by
+// what the client expects to dial.
+function portFor(connectionType: string): number {
+  if (connectionType === "socks5") return 1080;
+  if (connectionType === "https") return 443;
+  return 8080;
+}
+
 async function readBody(req: http.IncomingMessage): Promise<unknown> {
   return new Promise((resolve) => {
     let data = "";
@@ -177,7 +185,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         const country = spec.country;
         const sessionName = spec.session;
         const isRotating = !sessionName;
-        const port = connectionType === "socks5" ? 1080 : 8080;
+        const port = portFor(connectionType);
 
         const userParts = [
           "user_" + proxy.username,
