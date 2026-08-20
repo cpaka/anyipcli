@@ -1186,6 +1186,22 @@ function renderManual(md) {
       html += '<hr class="my-3">';
       i++; continue;
     }
+    // "Screenshot: assets/..." renders as the picture here and stays readable
+    // as plain text in the terminal manual.
+    var shot = line.match(/^\s*(?:Screenshot|Captures?|Capturas|Скриншоты|截图)\s*[:：]\s*(\S+\.png)/);
+    if (shot) {
+      html += '<img src="/' + esc(shot[1].replace(/^\/?(docs\/images|assets)\//, 'assets/')) +
+        '" alt="" class="img-fluid rounded border my-3" />';
+      i++;
+      // Any further "path (caption)" lines of the same block are extra shots.
+      while (i < lines.length && /^\s+\S+\.png/.test(lines[i])) {
+        var extra = lines[i].trim().split(/\s+/)[0];
+        html += '<img src="/' + esc(extra.replace(/^\/?(docs\/images|assets)\//, 'assets/')) +
+          '" alt="" class="img-fluid rounded border my-3" />';
+        i++;
+      }
+      continue;
+    }
     if (line.startsWith('    ')) {
       var codeLines = [];
       while (i < lines.length && (lines[i].startsWith('    ') ||

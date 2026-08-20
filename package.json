@@ -1,7 +1,7 @@
 {
   "name": "anyip-cli",
   "version": "2.0.0",
-  "description": "CLI for anyIP.io — manage residential & mobile proxies from your terminal",
+  "description": "CLI for anyIP.io \u2014 manage residential & mobile proxies from your terminal",
   "keywords": [
     "proxy",
     "anyip",
@@ -18,7 +18,8 @@
   },
   "files": [
     "dist",
-    "proxy-manager.html"
+    "proxy-manager.html",
+    "assets"
   ],
   "scripts": {
     "build": "tsup",

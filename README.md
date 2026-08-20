@@ -19,6 +19,8 @@
   and a one-click Change IP on any sticky session
 - 📖 **Read the manual in Chinese or Russian** — built-in, no API call needed
 
+![anyIP Proxy Manager — the dashboard behind `anyip serve`](docs/images/dashboard-proxies.png)
+
 ---
 
 ## 📦 Installation
