@@ -14,19 +14,28 @@ Documentación oficial: https://anyip.io/docs/guides/quick-start
 
 ## Instalación
 
-### Instalación global (recomendada)
-    npm install -g anyip-cli
-    anyip --help
+No está publicado en npm — instala desde el código fuente:
 
-### Desde el código fuente
-    git clone <repo>
-    cd anyip-cli
+    git clone https://github.com/cpaka/anyipcli
+    cd anyipcli
     npm install
     npm run build
-    npm link        # hace que 'anyip' esté disponible globalmente
+    npm link        # añade 'anyip' a tu PATH
+    anyip --help
 
-### Sin instalación (uso puntual)
-    npx anyip-cli <comando>
+npm link enlaza el repositorio: tras un git pull basta con 'npm run build'.
+Para quitarlo: npm unlink -g anyip-cli
+
+Sin enlazar, ejecútalo desde el repositorio: node dist/index.js <comando>
+
+---
+
+## Dónde conseguir las claves
+
+    Clave API anyIP  inicia sesión en https://anyip.io/account/ y abre
+                     https://anyip.io/account/settings/api-keys para crear una clave
+    Clave Anthropic  https://platform.claude.com/settings/workspaces/default/keys
+                     (opcional — solo para anyip generate y idiomas no incluidos)
 
 ---
 

@@ -13,19 +13,28 @@ anyIP.io 提供住宅代理和移动代理，适用于网页抓取、自动化�
 
 ## 安装
 
-### 全局安装（推荐）
-    npm install -g anyip-cli
-    anyip --help
+未发布到 npm — 请从源码安装：
 
-### 从源码安装
-    git clone <仓库地址>
-    cd anyip-cli
+    git clone https://github.com/cpaka/anyipcli
+    cd anyipcli
     npm install
     npm run build
-    npm link
+    npm link        # 将 'anyip' 加入 PATH
+    anyip --help
 
-### 无需安装（临时使用）
-    npx anyip-cli <命令>
+npm link 会链接该仓库：git pull 之后执行 'npm run build' 即可更新。
+移除：npm unlink -g anyip-cli
+
+不使用链接时，可在仓库目录直接运行：node dist/index.js <命令>
+
+---
+
+## 在哪里获取密钥
+
+    anyIP API 密钥   登录 https://anyip.io/account/ ，打开
+                     https://anyip.io/account/settings/api-keys 创建密钥
+    Anthropic 密钥   https://platform.claude.com/settings/workspaces/default/keys
+                     （可选 — 仅用于 anyip generate 和非内置语言的手册）
 
 ---
 

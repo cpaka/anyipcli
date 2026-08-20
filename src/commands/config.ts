@@ -18,7 +18,13 @@ export function registerConfigCommands(program: Command): void {
 
       if (!anyipKey && !claudeKey) {
         // Fully interactive — neither flag was given
-        console.log(chalk.dim("\n  Keys are stored locally. Press Enter to keep existing value.\n"));
+        console.log(chalk.dim("\n  Keys are stored locally. Press Enter to keep existing value."));
+        console.log(
+          chalk.dim("  anyIP  : https://anyip.io/account/settings/api-keys  (sign in first)")
+        );
+        console.log(
+          chalk.dim("  Claude : https://platform.claude.com/settings/workspaces/default/keys  (optional)\n")
+        );
         anyipKey = (await askSecret("  anyIP API key      : ")).trim() || undefined;
         claudeKey = (await askSecret("  Claude API key     : ")).trim() || undefined;
         console.log();

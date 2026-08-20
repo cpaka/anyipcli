@@ -23,25 +23,35 @@
 
 ## 📦 Installation
 
-### Global install *(recommended)*
-```bash
-npm install -g anyip-cli
-anyip --help
-```
+Not published to npm — install from source:
 
-### From source
 ```bash
 git clone https://github.com/cpaka/anyipcli
 cd anyipcli
 npm install
 npm run build
-npm link          # makes `anyip` available globally
+npm link          # makes `anyip` available on your PATH
+anyip --help
 ```
 
-### One-off use without installing
-```bash
-npx anyip-cli <command>
-```
+`npm link` symlinks the repo, so `npm run build` after a `git pull` is enough to
+update the installed command. To remove it again: `npm unlink -g anyip-cli`.
+
+Prefer not to link? Run it straight from the checkout with `node dist/index.js
+<command>`, or `npm run dev -- <command>` to skip the build step.
+
+---
+
+## 🔑 Where to get the keys
+
+| Key | Where |
+|-----|-------|
+| **anyIP API key** | Sign in at [anyip.io/account](https://anyip.io/account/), then open [Settings → API keys](https://anyip.io/account/settings/api-keys) and create one |
+| **Anthropic (Claude) key** *(optional)* | [platform.claude.com → API keys](https://platform.claude.com/settings/workspaces/default/keys) |
+
+The Claude key is only needed for `anyip generate` and for `anyip man` in a
+language that has no built-in manual — everything else runs on the anyIP key
+alone.
 
 ---
 
@@ -64,6 +74,9 @@ anyip generate "scrape Amazon prices across 5 US cities, rotating IPs"
 ---
 
 ## 🔐 Authentication
+
+Both keys come from a web dashboard — see
+[Where to get the keys](#-where-to-get-the-keys) above for the exact pages.
 
 ### Option A — Interactive prompt *(safest — keys stay out of shell history)*
 ```bash

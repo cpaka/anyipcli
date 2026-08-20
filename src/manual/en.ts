@@ -13,19 +13,28 @@ Official documentation: https://anyip.io/docs/guides/quick-start
 
 ## Installation
 
-### Global install (recommended)
-    npm install -g anyip-cli
-    anyip --help
+Not published to npm — install from source:
 
-### From source
-    git clone <repo>
-    cd anyip-cli
+    git clone https://github.com/cpaka/anyipcli
+    cd anyipcli
     npm install
     npm run build
-    npm link        # makes 'anyip' available globally
+    npm link        # puts 'anyip' on your PATH
+    anyip --help
 
-### Without installing (one-off use)
-    npx anyip-cli <command>
+npm link symlinks the checkout, so 'npm run build' after a git pull updates the
+installed command. Remove it with: npm unlink -g anyip-cli
+
+Without linking, run it from the checkout: node dist/index.js <command>
+
+---
+
+## Where to get the keys
+
+    anyIP API key    sign in at https://anyip.io/account/ then open
+                     https://anyip.io/account/settings/api-keys and create a key
+    Anthropic key    https://platform.claude.com/settings/workspaces/default/keys
+                     (optional — only for anyip generate and non-built-in manual languages)
 
 ---
 

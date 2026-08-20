@@ -14,19 +14,28 @@ anyIP.io предоставляет резидентные и мобильные
 
 ## Установка
 
-### Глобальная установка (рекомендуется)
-    npm install -g anyip-cli
-    anyip --help
+В npm не опубликовано — установка из исходного кода:
 
-### Из исходного кода
-    git clone <репозиторий>
-    cd anyip-cli
+    git clone https://github.com/cpaka/anyipcli
+    cd anyipcli
     npm install
     npm run build
-    npm link
+    npm link        # добавляет 'anyip' в PATH
+    anyip --help
 
-### Без установки (разовое использование)
-    npx anyip-cli <команда>
+npm link создаёт ссылку на репозиторий: после git pull достаточно 'npm run build'.
+Удалить: npm unlink -g anyip-cli
+
+Без ссылки запускайте из репозитория: node dist/index.js <команда>
+
+---
+
+## Где взять ключи
+
+    Ключ API anyIP   войдите на https://anyip.io/account/ и откройте
+                     https://anyip.io/account/settings/api-keys, создайте ключ
+    Ключ Anthropic   https://platform.claude.com/settings/workspaces/default/keys
+                     (необязателен — только для anyip generate и не встроенных языков)
 
 ---
 

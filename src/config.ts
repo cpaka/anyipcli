@@ -59,7 +59,9 @@ export function getAnyipKey(): string {
     console.error(
       "❌  anyIP key not set.\n" +
       "    Run: anyip config set-keys\n" +
-      "    Or:  export ANYIP_API_KEY=your_key"
+      "    Or:  export ANYIP_API_KEY=your_key\n" +
+      "    Get a key: sign in at https://anyip.io/account/ →\n" +
+      "               https://anyip.io/account/settings/api-keys"
     );
     process.exit(1);
   }
@@ -74,7 +76,7 @@ export function getClaudeKey(): string {
       "❌  Claude (Anthropic) key not set.\n" +
       "    Run: anyip config set-keys --claude YOUR_KEY\n" +
       "    Or:  export ANTHROPIC_API_KEY=your_key\n" +
-      "    Get a key at: https://console.anthropic.com"
+      "    Get a key at: https://platform.claude.com/settings/workspaces/default/keys"
     );
     process.exit(1);
   }
