@@ -203,7 +203,10 @@ Appuyez sur Ctrl+C pour arrêter le serveur. Le tableau de bord comprend :
 ## Format d'URL proxy
 
     http://UTILISATEUR:MOTDEPASSE@gate.anyip.io:8080      (proxy HTTP)
+    https://UTILISATEUR:MOTDEPASSE@portal.anyip.io:443    (proxy HTTPS)
     socks5://UTILISATEUR:MOTDEPASSE@portal.anyip.io:1080  (proxy SOCKS5)
+
+Les trois protocoles répondent sur le même hôte — choisissez celui que votre client parle.
 
 Avec les attributs de session intégrés dans le nom d'utilisateur :
 
@@ -215,6 +218,8 @@ Attributs (séparés par des virgules dans le champ nom d'utilisateur) :
     country_XX      code pays ISO
     region_XXX      slug région/état
     city_XXX        slug ville
+    asn_N           fixer un FAI/opérateur (voir : anyip asn)
+    lat_X,lon_Y     pair le plus proche d'un point GPS (voir : anyip near)
     session_NOM     nom de session persistante (omis pour rotation)
     sesstime_N      durée de session en minutes
 

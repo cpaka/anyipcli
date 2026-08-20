@@ -198,7 +198,10 @@ anyIP.io предоставляет резидентные и мобильные
 ## Формат URL прокси
 
     http://логин:пароль@gate.anyip.io:8080         (HTTP)
+    https://логин:пароль@portal.anyip.io:443        (HTTPS)
     socks5://логин:пароль@portal.anyip.io:1080      (SOCKS5)
+
+Все три протокола работают на одном хосте — выбирайте тот, который поддерживает клиент.
 
 Атрибуты передаются внутри имени пользователя (через запятую):
     http://user_ID,type_residential,country_US,session_имя:пароль@gate.anyip.io:8080
@@ -209,6 +212,8 @@ anyIP.io предоставляет резидентные и мобильные
     country_XX      код страны ISO
     region_XXX      регион (slug)
     city_XXX        город (slug)
+    asn_N           закрепить провайдера (см. anyip asn)
+    lat_X,lon_Y     ближайший пир к GPS-точке (см. anyip near)
     session_NAME    имя сессии (без него — ротационный режим)
     sesstime_N      длительность сессии в минутах
 

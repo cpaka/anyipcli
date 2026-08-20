@@ -203,7 +203,10 @@ Presiona Ctrl+C para detener el servidor. El panel incluye:
 ## Formato de URL proxy
 
     http://USUARIO:CONTRASEÑA@gate.anyip.io:8080      (proxy HTTP)
+    https://USUARIO:CONTRASEÑA@portal.anyip.io:443    (proxy HTTPS)
     socks5://USUARIO:CONTRASEÑA@portal.anyip.io:1080  (proxy SOCKS5)
+
+Los tres protocolos responden en el mismo host — elige el que hable tu cliente.
 
 Con atributos de sesión integrados en el nombre de usuario:
 
@@ -215,6 +218,8 @@ Atributos (separados por comas en el campo de nombre de usuario):
     country_XX      código de país ISO
     region_XXX      slug de región/estado
     city_XXX        slug de ciudad
+    asn_N           fijar un ISP/operador (ver: anyip asn)
+    lat_X,lon_Y     par más cercano a un punto GPS (ver: anyip near)
     session_NOMBRE  etiqueta de sesión fija (omitir para rotación)
     sesstime_N      duración de sesión en minutos
 

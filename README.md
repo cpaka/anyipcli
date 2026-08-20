@@ -13,7 +13,10 @@
 - 📊 **Monitor bandwidth and traffic** per account, per domain, per date range
 - 🔌 **Test proxy connectivity** live with a built-in curl checker
 - 💾 **Save and reuse proxy sessions** locally without re-fetching credentials
-- 🌐 **Launch a local web dashboard** if you prefer a GUI
+- 🎯 **Target by country, region, city, ASN or GPS point** — and print the
+  username flags ready to paste (`--tags`)
+- 🌐 **Launch a local web dashboard** if you prefer a GUI — keys, colours,
+  and a one-click Change IP on any sticky session
 - 📖 **Read the manual in Chinese or Russian** — built-in, no API call needed
 
 ---
@@ -524,7 +527,7 @@ src/
 ├── commands/
 │   ├── account.ts        # anyip account ...
 │   ├── config.ts         # anyip config ...
-│   ├── data.ts           # anyip country / region / city / asn
+│   ├── data.ts           # anyip country / region / city / asn / near
 │   ├── generate.ts       # anyip generate
 │   ├── man.ts            # anyip man
 │   ├── proxy.ts          # anyip get / anyip proxy ...
@@ -564,6 +567,27 @@ team id is resolved automatically from your API key and cached locally.
 | `GET /api/data/region/:country` | `anyip region` |
 | `GET /api/data/city/:country/:region` | `anyip city` |
 | `GET /api/data/asn/:country` | `anyip asn` |
+| `GET /api/proxy_accounts` *(legacy, JSON-LD)* | Change IP button — reads `personal_hash` |
+| `GET /api/invalidate/:hash/:session` | Change IP button — rotates a sticky session |
+
+`personal_hash` is only present in the JSON-LD representation, so that one call
+asks for `application/ld+json`; the v1 resource exposes no rotation link.
+
+`anyip near` resolves place names through two third-party geocoders rather than
+anyIP: [Open-Meteo](https://open-meteo.com/) for populated places, falling back
+to [Nominatim](https://nominatim.openstreetmap.org/) for landmarks and
+addresses. Both are key-less.
+
+### Local dashboard routes
+
+`anyip serve` exposes its own small API on `127.0.0.1` for the page it serves:
+
+| Route | Purpose |
+|-------|---------|
+| `GET/PUT /api/settings` | API keys (masked on read) and dashboard palette |
+| `GET /api/sessions` · `DELETE /api/sessions/:name` | locally saved proxies |
+| `POST /api/sessions/:name/rotate` | Change IP for one sticky session |
+| `GET /api/manual?lang=` | built-in manual for the Manual tab |
 
 ---
 

@@ -204,7 +204,10 @@ Press Ctrl+C to stop the server. The dashboard includes:
 ## Proxy URL Format
 
     http://USERNAME:PASSWORD@gate.anyip.io:8080      (HTTP proxy)
+    https://USERNAME:PASSWORD@portal.anyip.io:443    (HTTPS proxy)
     socks5://USERNAME:PASSWORD@portal.anyip.io:1080  (SOCKS5 proxy)
+
+All three protocols answer on the same host — pick whichever your client speaks.
 
 With session attributes embedded in the username:
 
@@ -216,6 +219,8 @@ Attributes (comma-separated in the username field):
     country_XX      ISO country code
     region_XXX      region/state slug
     city_XXX        city slug
+    asn_N           pin one ISP/carrier (see: anyip asn)
+    lat_X,lon_Y     closest peer to a GPS point (see: anyip near)
     session_NAME    sticky session label (omit for rotating)
     sesstime_N      session duration in minutes
 

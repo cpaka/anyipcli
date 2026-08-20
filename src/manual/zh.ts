@@ -195,7 +195,10 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 ## 代理 URL 格式
 
     http://用户名:密码@gate.anyip.io:8080         （HTTP 代理）
+    https://用户名:密码@portal.anyip.io:443       （HTTPS 代理）
     socks5://用户名:密码@portal.anyip.io:1080     （SOCKS5 代理）
+
+三种协议使用同一主机 — 选择客户端支持的即可。
 
 用户名中内嵌连接属性（逗号分隔）：
     http://user_账户ID,type_residential,country_US,session_会话名:密码@gate.anyip.io:8080
@@ -206,6 +209,8 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     country_XX      ISO 国家代码
     region_XXX      省/州 slug
     city_XXX        城市 slug
+    asn_N           指定 ISP/运营商（见 anyip asn）
+    lat_X,lon_Y     最接近某 GPS 坐标的节点（见 anyip near）
     session_NAME    粘性会话名称（不设置则为轮换模式）
     sesstime_N      会话时长（分钟）
 
