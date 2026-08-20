@@ -241,6 +241,7 @@ anyip proxy list --network mobile         # residential | mobile
 anyip proxy list --session sticky         # sticky | rotating
 anyip proxy list --search paris           # name, country, region, city, pool, ASN or tag
 anyip proxy list --format http            # hostuser | userhost | http | https | socks5
+anyip proxy list --change-url             # append …:pass[https://…/api/invalidate/<hash>/<session>]
 anyip proxy list --json                   # each session plus its `proxy` string
 ```
 
@@ -513,6 +514,17 @@ Passwords are printed as `*****` until you press **Show passwords**, so the tab
 is safe to have open in a shared room or a screen share. **Copy** and
 **Export .txt** always hand over the real string regardless of that toggle.
 
+**Change URL** appends each sticky proxy's rotation link to its string, the shape
+the anyIP dashboard's *Get proxy details* uses:
+
+```
+portal.anyip.io:1080:user_3c035b,type_residential,country_us,region_virginia,sesstime_10080,session_t9axpg093k:PASSWORD[https://dashboard.anyip.io/api/invalidate/1d4cfc064f975d49b156/t9axpg093k]
+```
+
+Hitting that URL gives the session a new IP. It applies to whichever format is
+selected, and to Copy and Export as well. Rotating proxies are left alone — they
+have no sticky session to invalidate.
+
 Location shows the country flag (`🇫🇷 FR`), or `🌐 Global` for a proxy with no
 country pinned.
 
@@ -735,6 +747,7 @@ addresses. Both are key-less.
 | Route | Purpose |
 |-------|---------|
 | `GET/PUT /api/settings` | API keys (masked on read) and dashboard palette |
+| `GET /api/rotation-links` | change-IP hash per account, for the Change URL toggle |
 | `GET /api/sessions` · `DELETE /api/sessions/:name` | locally saved proxies |
 | `POST /api/sessions/:name/rotate` | Change IP for one sticky session |
 | `GET /api/manual?lang=` | built-in manual for the Manual tab |

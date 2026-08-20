@@ -116,6 +116,7 @@ npm link создаёт ссылку на репозиторий: после git
     anyip proxy list --session sticky # sticky | rotating
     anyip proxy list --search paris   # имя, страна, регион, город, pool, ASN или тег
     anyip proxy list --format http    # hostuser | userhost | http | https | socks5
+    anyip proxy list --change-url     # добавляет ссылку смены IP: …:pass[https://…]
     anyip proxy list --user 1         # сессии аккаунта #1
     anyip proxy get <имя>            # детальная карточка сессии
     anyip proxy curl <имя>           # вывести curl-команду для теста

@@ -324,6 +324,10 @@ export interface RotateResult {
   session?: string;
 }
 
+export function rotationUrlBase(): string {
+  return `${BASE_URL}/api/invalidate`;
+}
+
 export function rotationUrl(personalHash: string, sessionName: string): string {
   return `${BASE_URL}/api/invalidate/${encodeURIComponent(personalHash)}/${encodeURIComponent(sessionName)}`;
 }

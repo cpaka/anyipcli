@@ -117,6 +117,7 @@ encuentra o crea una y la prueba con una verificación curl en vivo.
     anyip proxy list --session sticky # sticky | rotating
     anyip proxy list --search paris   # nombre, país, región, ciudad, pool, ASN o tag
     anyip proxy list --format http    # hostuser | userhost | http | https | socks5
+    anyip proxy list --change-url     # añade el enlace de cambio de IP: …:pass[https://…]
     anyip proxy list --user 1         # sesiones pertenecientes a la cuenta proxy n.º 1
     anyip proxy get <nombre>          # tarjeta de detalle completo de una sesión
     anyip proxy curl <nombre>         # imprimir el comando curl de prueba

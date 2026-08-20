@@ -170,7 +170,8 @@ export function printTrafficTable(items: TrafficPoint[]): void {
 // 100+ characters and would be unreadable squeezed into a column.
 export function printSessionsTable(
   sessions: ProxySession[],
-  format: ProxyFormat = "hostuser"
+  format: ProxyFormat = "hostuser",
+  changeUrls?: Record<string, string>
 ): void {
   const rows = sessions.map((s, i) => ({
     n: String(i + 1),
@@ -188,7 +189,7 @@ export function printSessionsTable(
       ].filter(Boolean).join(" · ") || "Global",
     created: timeAgo(s.createdAt),
     lastIp: s.lastIp ?? "",
-    proxy: buildProxyString(s, format),
+    proxy: buildProxyString(s, format, changeUrls?.[s.name]),
   }));
 
   const w = (key: keyof (typeof rows)[number], head: string) =>

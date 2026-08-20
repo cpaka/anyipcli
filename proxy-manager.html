@@ -211,6 +211,10 @@ button.settings-section:hover { color: var(--brand); }
           title="Show or hide the passwords in the proxy strings">
           <i class="bi bi-eye"></i> Show passwords
         </button>
+        <button class="btn btn-sm btn-outline-primary" id="toggleChangeUrl" type="button"
+          title="Append each sticky proxy's change-IP link to its string">
+          <i class="bi bi-link-45deg"></i> Change URL
+        </button>
         <select class="form-select form-select-sm" id="formatSelect" style="max-width:240px">
           <option value="hostuser">host:port:user:pass</option>
           <option value="userhost">user:pass@host:port</option>
@@ -633,6 +637,7 @@ var state = {
   sessions: null, user: null, accountsLoaded: false, manualLoaded: false,
   settings: null, themeTouched: {}, clearKeys: { anyipKey:false, claudeKey:false },
   pendingBulk: null, selected: new Set(), showPasswords: false,
+  showChangeUrl: false, changeLinks: null,
 };
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
@@ -848,13 +853,24 @@ function renderAccountTab() {
 }
 
 /* ── Proxies tab ────────────────────────────────────────────────────────────── */
+// The rotation link belongs to the account, so it is keyed by user tag and
+// only exists for sticky sessions — a rotating proxy has no session to invalidate.
+function changeUrlFor(s) {
+  if (!state.showChangeUrl || !state.changeLinks || s.rotating) return '';
+  var tag = s.userTag || (s.username.split(',')[0] || '').replace(/^user_/, '');
+  var hash = state.changeLinks.hashes[tag];
+  return hash ? state.changeLinks.base + '/' + hash + '/' + encodeURIComponent(s.name) : '';
+}
+
 function buildProxyStr(s, fmt) {
   var u=s.username, pw=s.password, h=s.server, p=s.port;
-  if (fmt==='userhost') return u+':'+pw+'@'+h+':'+p;
-  if (fmt==='http')     return 'http://'+u+':'+pw+'@'+h+':'+p;
-  if (fmt==='https')    return 'https://'+u+':'+pw+'@'+h+':'+p;
-  if (fmt==='socks5')   return 'socks5://'+u+':'+pw+'@'+h+':'+p;
-  return h+':'+p+':'+u+':'+pw;
+  var url = changeUrlFor(s);
+  var tail = url ? '['+url+']' : '';
+  if (fmt==='userhost') return u+':'+pw+'@'+h+':'+p+tail;
+  if (fmt==='http')     return 'http://'+u+':'+pw+'@'+h+':'+p+tail;
+  if (fmt==='https')    return 'https://'+u+':'+pw+'@'+h+':'+p+tail;
+  if (fmt==='socks5')   return 'socks5://'+u+':'+pw+'@'+h+':'+p+tail;
+  return h+':'+p+':'+u+':'+pw+tail;
 }
 function getFilters() {
   return {
@@ -1103,6 +1119,26 @@ function initDeleteModal() {
 }
 
 function initProxiesTab() {
+  document.getElementById('toggleChangeUrl').addEventListener('click', function(){
+    var btn = this;
+    var enabling = !state.showChangeUrl;
+
+    var ready = enabling && !state.changeLinks
+      ? apiGet('/api/rotation-links').then(function(links){ state.changeLinks = links; })
+      : Promise.resolve();
+
+    btn.disabled = true;
+    ready.then(function(){
+      state.showChangeUrl = enabling;
+      btn.innerHTML = enabling
+        ? '<i class="bi bi-link-45deg"></i> Hide change URL'
+        : '<i class="bi bi-link-45deg"></i> Change URL';
+      if (state.sessions) renderProxies(state.sessions);
+    }).catch(function(e){
+      toast('Could not load change-IP links: ' + e, 'danger');
+    }).then(function(){ btn.disabled = false; });
+  });
+
   document.getElementById('togglePw').addEventListener('click', function(){
     state.showPasswords = !state.showPasswords;
     this.innerHTML = state.showPasswords

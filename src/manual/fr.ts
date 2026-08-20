@@ -118,6 +118,7 @@ Les sessions sont des configurations de connexion proxy enregistrées localement
     anyip proxy list --session sticky # sticky | rotating
     anyip proxy list --search paris   # nom, pays, région, ville, pool, ASN ou tag
     anyip proxy list --format http    # hostuser | userhost | http | https | socks5
+    anyip proxy list --change-url     # ajoute le lien de changement d'IP : …:pass[https://…]
     anyip proxy list --user 1         # sessions appartenant au compte proxy n°1
     anyip proxy get <nom>             # fiche détaillée d'une session
     anyip proxy curl <nom>            # afficher la commande curl de test

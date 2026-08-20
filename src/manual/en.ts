@@ -119,6 +119,7 @@ creates one and tests it with a live curl check.
     anyip proxy list --session sticky # sticky | rotating
     anyip proxy list --search paris   # name, country, region, city, pool, ASN or tag
     anyip proxy list --format http    # hostuser | userhost | http | https | socks5
+    anyip proxy list --change-url     # append the change-IP link: …:pass[https://…/invalidate/…]
     anyip proxy list --user 1         # sessions belonging to proxy account #1
     anyip proxy get <name>            # full detail card for a session
     anyip proxy curl <name>           # print the curl test command
@@ -225,6 +226,7 @@ that did not address it by a loopback hostname. The dashboard includes:
 - Session viewer
 - Checkboxes for multi-select: copy, export, change IP or delete many at once
 - Passwords shown as ***** until you press Show passwords (Copy/Export use the real one)
+- Change URL button appends each sticky proxy's rotation link to its string
 - Country flag per row, 🌐 Global when no country is pinned
 - Change IP button on every sticky row (rotation link)
 - Settings button next to + New Proxy: API keys and dashboard colours

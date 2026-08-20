@@ -114,6 +114,7 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     anyip proxy list --session sticky # sticky | rotating
     anyip proxy list --search paris   # 名称、国家、省/州、城市、pool、ASN 或标签
     anyip proxy list --format http    # hostuser | userhost | http | https | socks5
+    anyip proxy list --change-url     # 追加换 IP 链接：…:pass[https://…]
     anyip proxy list --user 1         # 筛选属于账户 #1 的会话
     anyip proxy get <名称>            # 查看某个会话的详细信息
     anyip proxy curl <名称>           # 打印 curl 测试命令

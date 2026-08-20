@@ -181,6 +181,15 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       return json(res, 200, settingsPayload());
     }
 
+    // username → rotation-link hash, so the page can render the change URL
+    // alongside a proxy string. One legacy call; the hash is the only secret.
+    if (path === "/api/rotation-links" && method === "GET") {
+      return json(res, 200, {
+        base: api.rotationUrlBase(),
+        hashes: await api.getRotationHashes(key),
+      });
+    }
+
     if (path === "/api/me" && method === "GET") {
       const [me, usage, subscription] = await Promise.all([
         api.getMe(key),

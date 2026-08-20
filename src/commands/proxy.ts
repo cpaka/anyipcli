@@ -225,6 +225,10 @@ export function registerProxyCommands(program: Command): void {
       "Proxy string format: hostuser | userhost | http | https | socks5",
       "hostuser"
     )
+    .option(
+      "--change-url",
+      "Append each sticky proxy's change-IP link: …:pass[https://…/api/invalidate/<hash>/<session>]"
+    )
     .option("--json", "Output raw JSON")
     .action(async (opts: {
       user?: string;
@@ -232,6 +236,7 @@ export function registerProxyCommands(program: Command): void {
       network?: string;
       session?: string;
       format?: string;
+      changeUrl?: boolean;
       json?: boolean;
     }) => {
       let all = sessions.listSessions();
@@ -286,10 +291,33 @@ export function registerProxyCommands(program: Command): void {
         process.exit(1);
       }
 
+      // The rotation link lives on the account, not the session, so it needs
+      // one API call — only made when asked for.
+      let changeUrls: Record<string, string> | undefined;
+      if (opts.changeUrl) {
+        const spinner = ora("Loading change-IP links…").start();
+        try {
+          const hashes = await api.getRotationHashes(getAnyipKey());
+          changeUrls = {};
+          for (const s of all) {
+            const hash = hashes[sessions.resolveUserTag(s)];
+            // Rotating proxies have no session to invalidate.
+            if (hash && !s.rotating) changeUrls[s.name] = api.rotationUrl(hash, s.name);
+          }
+          spinner.stop();
+        } catch (e) {
+          spinner.warn(`Could not load change-IP links — ${String(e)}`);
+        }
+      }
+
       if (opts.json) {
         console.log(
           JSON.stringify(
-            all.map((s) => ({ ...s, proxy: sessions.buildProxyString(s, format) })),
+            all.map((s) => ({
+              ...s,
+              proxy: sessions.buildProxyString(s, format, changeUrls?.[s.name]),
+              ...(changeUrls?.[s.name] ? { change_url: changeUrls[s.name] } : {}),
+            })),
             null,
             2
           )
@@ -311,7 +339,7 @@ export function registerProxyCommands(program: Command): void {
         display.info("No sessions found. Use: anyip get");
         return;
       }
-      display.printSessionsTable(all, format);
+      display.printSessionsTable(all, format, changeUrls);
       console.log();
     });
 

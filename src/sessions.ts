@@ -151,12 +151,21 @@ export function buildProxyUrl(s: ProxySession, scheme = "http"): string {
 // --format` and the picker there produce identical strings.
 export type ProxyFormat = "hostuser" | "userhost" | "http" | "https" | "socks5";
 
-export function buildProxyString(s: ProxySession, format: ProxyFormat = "hostuser"): string {
+// `changeUrl` appends the account's rotation link in brackets, the shape the
+// dashboard's "Get proxy details" uses:
+//   host:port:user:pass[https://dashboard.anyip.io/api/invalidate/<hash>/<session>]
+export function buildProxyString(
+  s: ProxySession,
+  format: ProxyFormat = "hostuser",
+  changeUrl?: string
+): string {
+  let str: string;
   switch (format) {
-    case "userhost": return `${s.username}:${s.password}@${s.server}:${s.port}`;
-    case "http":     return buildProxyUrl(s, "http");
-    case "https":    return buildProxyUrl(s, "https");
-    case "socks5":   return buildProxyUrl(s, "socks5");
-    default:         return `${s.server}:${s.port}:${s.username}:${s.password}`;
+    case "userhost": str = `${s.username}:${s.password}@${s.server}:${s.port}`; break;
+    case "http":     str = buildProxyUrl(s, "http"); break;
+    case "https":    str = buildProxyUrl(s, "https"); break;
+    case "socks5":   str = buildProxyUrl(s, "socks5"); break;
+    default:         str = `${s.server}:${s.port}:${s.username}:${s.password}`;
   }
+  return changeUrl ? `${str}[${changeUrl}]` : str;
 }
