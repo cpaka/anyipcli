@@ -167,6 +167,11 @@ set of proxy accounts automatically.
 
     # Save credential list to file
     anyip generate "residential US proxies for SEO monitoring" --output proxies.txt
+    anyip generate "..." --new-accounts   # one new account per proxy (default: reuse)
+
+Proxies are created as proxy *profiles* on the accounts you already have — in API v1
+the targeting lives on profiles, so a plan does not spend one account per proxy. Use
+--new-accounts if you really want a fresh account each.
 
 You get one recommended setup plus 2-3 alternatives (a leaner pool, sticky sessions
 for logged-in flows, a mobile/ASN fallback lane…), each with a table breaking down

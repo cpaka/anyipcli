@@ -370,7 +370,10 @@ anyip generate "residential US proxies for scraping" --output proxies.txt
    `city_`, `asn_`, `pool_`, `session_`, `sesstime_`, `sessreplace_`,
    `sessasn_` flag in that username, and why *this* use case needs it
 4. **Rotation strategy** advice for the recommended setup
-5. **Auto-creation** of the setup you pick, in parallel batches
+5. **Auto-creation** of the setup you pick — one **proxy profile** per planned
+   proxy, attached to the accounts you already have. Targeting lives on profiles
+   in API v1, so a plan does not need (or spend) a new account per proxy; pass
+   `--new-accounts` if you do want one fresh account each
 6. **Local session cache** — immediately usable with `anyip get` and `anyip proxy list`
 7. **Credential list** — ready-to-paste `http://user:pass@gate.anyip.io:8080` format
 

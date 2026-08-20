@@ -1,9 +1,27 @@
 import * as readline from "readline";
+import { readFileSync } from "fs";
 import type { ProxyProfile } from "./api.js";
 
 // ── Interactive prompts ────────────────────────────────────────────────────────
 
+// Piped answers, one per line, read on the first prompt. A fresh readline
+// interface per question swallows the whole buffer on the first `question()`,
+// so every later prompt would hang on EOF — which is what made commands with
+// two prompts (anyip generate) impossible to script.
+let pipedAnswers: string[] | null = null;
+
 export function ask(question: string): Promise<string> {
+  if (!process.stdin.isTTY) {
+    if (pipedAnswers === null) {
+      let raw = "";
+      try { raw = readFileSync(0, "utf-8"); } catch { /* no stdin at all */ }
+      pipedAnswers = raw.split(/\r?\n/);
+    }
+    const answer = pipedAnswers.shift() ?? "";
+    process.stdout.write(question + answer + "\n");
+    return Promise.resolve(answer);
+  }
+
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question(question, (ans) => {

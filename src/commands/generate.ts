@@ -8,7 +8,8 @@ import * as sessions from "../sessions.js";
 import { generateProxyPlan } from "../ai.js";
 import type { ProxyOption, ProxyPlanItem } from "../ai.js";
 import { getKeys } from "../config.js";
-import { ask } from "../utils.js";
+import { ask, specToProfile } from "../utils.js";
+import type { ProxySpec } from "../utils.js";
 
 // One setup: what it is, when to pick it, the sets it creates, and a row per
 // username flag explaining why this use case needs it.
@@ -59,7 +60,14 @@ export function registerGenerateCommand(program: Command): void {
     .description("AI: analyze a use case and create the optimal proxy setup automatically")
     .option("-o, --output <file>", "Save credential list to file")
     .option("--dry-run", "Show plan without creating any proxies")
-    .action(async (descParts: string[], opts: { output?: string; dryRun?: boolean }) => {
+    .option(
+      "--new-accounts",
+      "Create one new proxy account per proxy instead of adding profiles to the accounts you already have"
+    )
+    .action(async (
+      descParts: string[],
+      opts: { output?: string; dryRun?: boolean; newAccounts?: boolean }
+    ) => {
       const { anyipKey, claudeKey } = getKeys();
 
       let description = descParts.join(" ").trim();
@@ -117,7 +125,9 @@ export function registerGenerateCommand(program: Command): void {
       }
 
       const confirm = await ask(
-        `  ${chalk.yellow(`Create ${chosen.total_proxies} proxies for "${chosen.name}"?`)} [Y/n] `
+        `  ${chalk.yellow(
+          `Create ${chosen.total_proxies} prox${chosen.total_proxies === 1 ? "y" : "ies"} for "${chosen.name}"?`
+        )} [Y/n] `
       );
       if (confirm.trim().toLowerCase() === "n") {
         display.info("Aborted.");
@@ -125,80 +135,138 @@ export function registerGenerateCommand(program: Command): void {
       }
       const selected = chosen;
 
-      // ── Build all payloads ─────────────────────────────────────────────────────
-      const payloads: Array<{ payload: api.CreateProxyPayload; item: ProxyPlanItem; idx: number }> = [];
-      // Targeting (type/country/session) is applied via username flags at
-      // connect time — the v1 account payload only carries quota and metadata.
+      // ── Expand the plan into one entry per proxy ───────────────────────────────
+      interface Entry {
+        item: ProxyPlanItem;
+        idx: number;
+        account: api.ProxyAccount;
+        profile?: api.ProxyProfile;
+      }
+      const wanted: Array<{ item: ProxyPlanItem; idx: number }> = [];
       for (const item of selected.proxy_plan) {
-        for (let i = 1; i <= item.count; i++) {
-          payloads.push({
-            item,
-            idx: i,
-            payload: {
-              description: `${item.description} #${i}`,
-              enabled: true,
-              quota_bytes: item.quota_bytes,
-            },
-          });
+        for (let i = 1; i <= item.count; i++) wanted.push({ item, idx: i });
+      }
+
+      // In v1 the targeting a plan describes lives on proxy *profiles*, and one
+      // account carries many of them. Spending an account per planned proxy
+      // burns the subscription's account allowance for nothing, so by default
+      // profiles are added to the accounts that already exist; --new-accounts
+      // restores the old one-account-per-proxy behaviour.
+      const setupSpinner = ora("Loading proxy accounts…").start();
+      let carriers: api.ProxyAccount[] = [];
+      try {
+        if (opts.newAccounts) {
+          setupSpinner.text = `Creating ${wanted.length} proxy accounts…`;
+          const BATCH = 5;
+          for (let start = 0; start < wanted.length; start += BATCH) {
+            const batch = wanted.slice(start, start + BATCH);
+            setupSpinner.text = `Creating proxy accounts… (${Math.min(start + BATCH, wanted.length)}/${wanted.length})`;
+            carriers.push(
+              ...(await Promise.all(
+                batch.map(({ item, idx }) =>
+                  api.createProxy(anyipKey, {
+                    description: `${item.description} #${idx}`,
+                    enabled: true,
+                    quota_bytes: item.quota_bytes,
+                  })
+                )
+              ))
+            );
+          }
+        } else {
+          const { members } = await api.listProxies(anyipKey, { itemsPerPage: "100" });
+          if (members.length === 0) {
+            setupSpinner.text = "No proxy account yet — creating one to carry the profiles…";
+            carriers = [
+              await api.createProxy(anyipKey, {
+                description: `anyip generate — ${description}`.slice(0, 120),
+                enabled: true,
+                quota_bytes: selected.proxy_plan[0]?.quota_bytes ?? 1_073_741_824,
+              }),
+            ];
+          } else {
+            // Credentials only come back on the single-account endpoint.
+            const needed = Math.min(members.length, wanted.length);
+            carriers = await Promise.all(
+              members.slice(0, needed).map((m) => api.getProxy(anyipKey, m.id))
+            );
+          }
+        }
+        setupSpinner.stop();
+      } catch (e) {
+        setupSpinner.fail(String(e));
+        if (String(e).includes("upgrade your subscription")) {
+          display.info(
+            opts.newAccounts
+              ? "Your plan is out of proxy accounts — drop --new-accounts to attach profiles to the accounts you already have."
+              : "Your plan is out of proxy accounts — create one from the dashboard first, then re-run."
+          );
+        }
+        return;
+      }
+
+      // ── Create one profile per planned proxy ───────────────────────────────────
+      const entries: Entry[] = [];
+      const failures: string[] = [];
+      const profileSpinner = ora(
+        `Creating ${wanted.length} proxy profile${wanted.length === 1 ? "" : "s"}…`
+      ).start();
+
+      for (const [i, { item, idx }] of wanted.entries()) {
+        // Round-robin so a plan bigger than your account list still spreads out.
+        const account = carriers[opts.newAccounts ? i : i % carriers.length];
+        profileSpinner.text = `Creating proxy profiles… (${i + 1}/${wanted.length})`;
+
+        const spec: ProxySpec = {
+          type: item.type,
+          country: item.country ?? undefined,
+          region: item.region ?? undefined,
+          city: item.city ?? undefined,
+          asn: item.asn ?? undefined,
+          sticky: !item.rotating,
+          sessTime: item.sess_time ?? undefined,
+        };
+        // Name it the way the plan reads, so the dashboard's profile list is
+        // legible; the API only asks for at least 3 characters.
+        const name = `${item.description} #${idx}`.slice(0, 60).padEnd(3, "_");
+
+        try {
+          const profile = await api.createProfile(
+            anyipKey,
+            specToProfile(spec, name, account.id)
+          );
+          entries.push({ item, idx, account, profile });
+        } catch (e) {
+          // A profile that fails still has working username flags, so keep the
+          // local session and report what did not get stored server-side.
+          failures.push(`${name}: ${String(e)}`);
+          entries.push({ item, idx, account });
         }
       }
 
-      // ── Create in parallel batches of 5 ───────────────────────────────────────
-      const BATCH = 5;
-      const created: api.ProxyAccount[] = [];
-      const createSpinner = ora(`Creating ${selected.total_proxies} proxies…`).start();
-
-      try {
-        for (let start = 0; start < payloads.length; start += BATCH) {
-          const batch = payloads.slice(start, start + BATCH);
-          createSpinner.text = `Creating proxies… (${Math.min(start + BATCH, payloads.length)}/${selected.total_proxies})`;
-          const results = await Promise.all(
-            batch.map(({ payload }) => api.createProxy(anyipKey, payload))
-          );
-          created.push(...results);
-        }
-        createSpinner.succeed(`Created ${created.length} proxies!`);
-      } catch (e) {
-        const status = (e as { status?: number }).status;
-        if (typeof status === "number" && status >= 500) {
-          createSpinner.text = "Server error — falling back to existing proxy accounts…";
-          created.length = 0;
-          try {
-            const { members } = await api.listProxies(anyipKey, { itemsPerPage: "100" });
-            if (members.length === 0) {
-              createSpinner.fail("No existing proxy accounts found. Create one with: anyip account create");
-              return;
-            }
-            const uniqueCount = Math.min(members.length, payloads.length);
-            const fullAccounts = await Promise.all(
-              members.slice(0, uniqueCount).map(m => api.getProxy(anyipKey, m.id))
-            );
-            for (let i = 0; i < payloads.length; i++) {
-              created.push(fullAccounts[i % fullAccounts.length]);
-            }
-            createSpinner.succeed(`Configured ${created.length} proxies from ${uniqueCount} existing account(s).`);
-          } catch (fallbackErr) {
-            createSpinner.fail(`Fallback failed: ${String(fallbackErr)}`);
-            return;
-          }
-        } else {
-          createSpinner.fail(String(e));
-          return;
-        }
+      const madeProfiles = entries.filter((e) => e.profile).length;
+      if (failures.length === 0) {
+        profileSpinner.succeed(
+          `Created ${madeProfiles} profile${madeProfiles === 1 ? "" : "s"} across ` +
+            `${new Set(entries.map((e) => e.account.id)).size} account(s)`
+        );
+      } else {
+        profileSpinner.warn(
+          `${madeProfiles}/${wanted.length} profiles created — ${failures.length} failed`
+        );
+        failures.slice(0, 3).forEach((f) => console.log(chalk.dim(`     ${f}`)));
       }
 
       // ── Save sessions locally ──────────────────────────────────────────────────
-      let proxyIdx = 0;
-      for (const { item, idx } of payloads) {
-        const proxy = created[proxyIdx++];
-        if (!proxy?.password) continue;
+      for (const { item, idx, account } of entries) {
+        if (!account.password) continue;
 
         const sessionName = item.rotating
           ? `gen_rotating_${Math.random().toString(16).slice(2, 8)}`
           : `${item.session_prefix}_${idx}`;
 
         const compositeUsername = [
-          `user_${proxy.username}`,
+          `user_${account.username}`,
           `type_${item.type}`,
           item.country && `country_${item.country}`,
           item.region  && `region_${item.region}`,
@@ -217,7 +285,7 @@ export function registerGenerateCommand(program: Command): void {
           server: "gate.anyip.io",
           port: 8080,
           username: compositeUsername,
-          password: proxy.password,
+          password: account.password,
           country: item.country ?? undefined,
           region: item.region ?? undefined,
           city: item.city ?? undefined,
@@ -225,7 +293,7 @@ export function registerGenerateCommand(program: Command): void {
           sessTime: item.sess_time ?? undefined,
           rotating: item.rotating,
           createdAt: new Date().toISOString(),
-          userTag: proxy.username ?? undefined,
+          userTag: account.username ?? undefined,
         });
       }
 
@@ -234,23 +302,34 @@ export function registerGenerateCommand(program: Command): void {
         "# anyIP Proxy List — AI Generated",
         `# Use case: ${description}`,
         `# Generated: ${new Date().toISOString().slice(0, 10)}`,
-        `# Total proxies: ${created.length}`,
+        `# Total proxies: ${entries.length}`,
         "#",
         "# FORMAT: http://username:password@gate.anyip.io:8080",
         "",
       ];
 
-      let idx = 0;
       for (const item of selected.proxy_plan) {
         lines.push(`## ${item.description} (×${item.count})`);
         if (item.notes) lines.push(`# ${item.notes}`);
-        for (let i = 0; i < item.count; i++) {
-          const p = created[idx++];
-          if (!p) break;
-          if (p.username && p.password) {
-            lines.push(`http://${p.username}:${p.password}@gate.anyip.io:8080`);
+        for (const entry of entries.filter((e) => e.item === item)) {
+          const { account } = entry;
+          // The username carries the targeting, so print the composite form —
+          // a bare user_XXXX would connect worldwide and ignore the plan.
+          const flags = [
+            `user_${account.username}`,
+            `type_${item.type}`,
+            item.country && `country_${item.country}`,
+            item.region  && `region_${item.region}`,
+            item.city    && `city_${item.city}`,
+            item.asn != null && `asn_${item.asn}`,
+            !item.rotating && item.session_prefix && `session_${item.session_prefix}_${entry.idx}`,
+            item.sess_time != null && `sesstime_${item.sess_time}`,
+          ].filter(Boolean).join(",");
+
+          if (account.username && account.password) {
+            lines.push(`http://${flags}:${account.password}@gate.anyip.io:8080`);
           } else {
-            lines.push(`# ${p.username || p.id}  (password not returned — anyip account inspect ${p.id})`);
+            lines.push(`# ${account.username || account.id}  (password not returned — anyip account inspect ${account.id})`);
           }
         }
         lines.push("");
