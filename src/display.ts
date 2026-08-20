@@ -265,6 +265,49 @@ export function printCitiesList(
   }
 }
 
+// ── Flag explanation table (anyip generate) ────────────────────────────────────
+// Plain aligned columns rather than a framed table — the "why" column wraps to
+// the terminal, and a box would push it down to a couple of words per line.
+export function printFlagTable(
+  rows: Array<{ flag: string; value: string; why: string }>,
+  indent = "     "
+): void {
+  if (rows.length === 0) return;
+
+  const flagW = Math.max(4, ...rows.map((r) => r.flag.length)) + 2;
+  const valueW = Math.max(5, ...rows.map((r) => r.value.length)) + 2;
+  const total = (process.stdout.columns ?? 100) - indent.length - flagW - valueW;
+  const whyW = Math.max(30, Math.min(total, 70));
+
+  const wrap = (text: string): string[] => {
+    const out: string[] = [];
+    let line = "";
+    for (const word of text.split(/\s+/)) {
+      if (!line) line = word;
+      else if (line.length + 1 + word.length <= whyW) line += ` ${word}`;
+      else { out.push(line); line = word; }
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
+  console.log(
+    indent + chalk.cyan("FLAG".padEnd(flagW) + "VALUE".padEnd(valueW) + "WHY IT IS THERE")
+  );
+  for (const r of rows) {
+    const lines = wrap(r.why);
+    console.log(
+      indent +
+        chalk.yellow(r.flag.padEnd(flagW)) +
+        chalk.white(r.value.padEnd(valueW)) +
+        chalk.dim(lines[0] ?? "")
+    );
+    for (const extra of lines.slice(1)) {
+      console.log(indent + " ".repeat(flagW + valueW) + chalk.dim(extra));
+    }
+  }
+}
+
 export function printHeader(title: string): void {
   console.log();
   console.log(chalk.bold.cyan(`  ⬡  anyIP CLI  `) + chalk.dim(`— ${title}`));

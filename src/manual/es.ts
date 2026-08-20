@@ -168,6 +168,10 @@ el conjunto óptimo de cuentas proxy.
     # Guardar la lista de credenciales en un archivo
     anyip generate "proxies residenciales ES para monitoreo SEO" --output proxies.txt
 
+Obtienes una configuración recomendada y 2-3 alternativas (pool reducido, sesiones fijas
+para flujos con login, carril móvil/ASN de respaldo…), cada una con una tabla que explica
+cada bandera del username y por qué tu caso la necesita.
+
 El generador también guarda todas las sesiones creadas localmente para que puedas
 usar inmediatamente \`anyip get\` o \`anyip proxy list\`.
 
@@ -178,6 +182,7 @@ usar inmediatamente \`anyip get\` o \`anyip proxy list\`.
 Lanza una interfaz gráfica local en tu navegador para gestionar proxies visualmente:
 
     anyip serve               # abre http://127.0.0.1:3000 en tu navegador
+    anyip dashboard           # misma orden — alias: dashboard, dash, gui
     anyip serve --port 8080   # puerto personalizado
 
 Presiona Ctrl+C para detener el servidor. El panel incluye:
@@ -193,6 +198,8 @@ Presiona Ctrl+C para detener el servidor. El panel incluye:
 ## Manual
 
     anyip man                  # mostrar este manual (inglés)
+    anyip manual french        # misma orden — alias: manual, docs
+    anyip docs es              # el idioma como palabra o código
     anyip man --language es    # Español
     anyip man --language fr    # Francés
     anyip man --language zh    # Chino (中文)

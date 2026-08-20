@@ -163,6 +163,9 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     # 将凭据列表保存到文件
     anyip generate "美国住宅代理用于 SEO 监控" --output proxies.txt
 
+你会得到一个推荐配置和 2-3 个备选方案（精简池、用于登录流程的粘性会话、移动/ASN
+备用通道等），每个方案都附带表格，逐条说明用到的 username 标志及其必要性。
+
 生成完成后，所有会话会自动保存到本地，可立即使用 \`anyip proxy list\` 查看。
 
 ---
@@ -172,6 +175,7 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 在浏览器中可视化管理代理：
 
     anyip serve               # 打开 http://127.0.0.1:3000
+    anyip dashboard           # 同一命令 — 别名：dashboard、dash、gui
     anyip serve --port 8080   # 自定义端口
 
 按 Ctrl+C 停止服务。控制台功能包括：
@@ -187,6 +191,8 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 ## 查看手册
 
     anyip man                  # 英文手册
+    anyip manual french        # 同一命令 — 别名：manual、docs
+    anyip docs es              # 语言可用名称或代码
     anyip man --language zh    # 中文手册（本文档）
     anyip man --language ru    # 俄文手册
 

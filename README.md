@@ -362,12 +362,33 @@ anyip generate "residential US proxies for scraping" --output proxies.txt
 ```
 
 ### What you get
-1. **AI analysis** of your use case
-2. **Proxy plan** with count, type, country, session strategy, and quota per group
-3. **Rotation strategy** advice
-4. **Auto-creation** of all proxy accounts in parallel batches
-5. **Local session cache** — immediately usable with `anyip get` and `anyip proxy list`
-6. **Credential list** — ready-to-paste `http://user:pass@gate.anyip.io:8080` format
+1. **AI analysis** of the target and its defences
+2. **One recommended setup plus 2–3 alternatives**, each differing in kind — a
+   leaner pool, a sticky-session setup for logged-in flows, a mobile/ASN-pinned
+   fallback lane — with what it is best for and what it gives up
+3. **A flag breakdown table per setup** — every `type_`, `country_`, `region_`,
+   `city_`, `asn_`, `pool_`, `session_`, `sesstime_`, `sessreplace_`,
+   `sessasn_` flag in that username, and why *this* use case needs it
+4. **Rotation strategy** advice for the recommended setup
+5. **Auto-creation** of the setup you pick, in parallel batches
+6. **Local session cache** — immediately usable with `anyip get` and `anyip proxy list`
+7. **Credential list** — ready-to-paste `http://user:pass@gate.anyip.io:8080` format
+
+```
+  2)  ALTERNATIVE  Lean single-lane starter pool  (4 proxies · ~12 GB)
+     Best for: pilot runs, price-sensitive projects…
+     Trade-off: pool_europe gives an unpredictable European country per request…
+     Username: user_XXXX,type_residential,pool_europe
+
+     FLAG              VALUE        WHY IT IS THERE
+     type_residential  residential  Datacenter exits are blocked on this target's pages…
+     pool_europe       europe       Covers UK, DE, FR, NL without an entry per country…
+```
+
+You are then asked which setup to create (`1`–`4`, or `n` to cancel); `--dry-run`
+prints the comparison and stops. Planning runs on Claude Opus 5 with adaptive
+thinking and a schema-enforced response — it is one call per `generate`, billed
+to your own Anthropic key.
 
 ---
 
@@ -378,6 +399,7 @@ Prefer a GUI? Launch a local browser interface:
 ```bash
 anyip serve               # opens http://127.0.0.1:3000
 anyip serve --port 8080   # custom port
+anyip dashboard           # same command — aliases: dashboard, dash, gui
 ```
 
 Press `Ctrl+C` to stop.
@@ -418,6 +440,9 @@ connection show the button disabled — there is no sticky IP to change.
 ---
 
 ## 📖 Manual
+
+`anyip man` also answers to `anyip manual` and `anyip docs`, and takes the
+language as a plain word (`anyip manual french`).
 
 Built-in static manuals — no API call, no internet required:
 

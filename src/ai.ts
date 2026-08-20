@@ -4,6 +4,11 @@ import type { ProxySpec } from "./utils.js";
 
 const MODEL = "claude-sonnet-4-6";
 
+// Planning is the one call whose output quality the user actually reads, so it
+// runs on the strongest model with adaptive thinking; the cheap classifiers
+// below stay on Sonnet.
+const PLAN_MODEL = "claude-opus-5";
+
 // ── Proxy plan generation ──────────────────────────────────────────────────────
 
 export interface ProxyPlanItem {
@@ -12,6 +17,9 @@ export interface ProxyPlanItem {
   type: "residential" | "mobile";
   country: string | null;
   region: string | null;
+  city: string | null;
+  asn: number | null;
+  pool: string | null;
   session_prefix: string;
   sess_time: number | null;
   rotating: boolean;
@@ -19,53 +27,149 @@ export interface ProxyPlanItem {
   notes: string;
 }
 
-export interface ProxyPlan {
-  analysis: string;
+// One row of the "why this flag" table printed under each setup.
+export interface FlagExplanation {
+  flag: string;   // e.g. "type_residential"
+  value: string;  // e.g. "residential" — what it resolves to for this setup
+  why: string;    // why this use case needs it
+}
+
+export interface ProxyOption {
+  name: string;
+  kind: "recommended" | "alternative";
+  summary: string;
+  best_for: string;
+  tradeoff: string;
+  username_example: string;
+  flags: FlagExplanation[];
   proxy_plan: ProxyPlanItem[];
-  rotation_strategy: string;
   total_proxies: number;
   estimated_total_quota_gb: number;
 }
 
-const PLAN_SYSTEM_PROMPT = `You are an expert proxy configuration advisor for web scraping, automation, and data collection.
-
-Given a use case description, output a complete proxy deployment plan.
-
-Think about:
-- Anti-bot measures severity → residential is harder to detect than mobile; mobile is faster
-- Geographic requirements → which countries/regions the target needs
-- Session strategy → scraping = rotating; account management = sticky IPs (one per account)
-- Volume estimation → request count × avg page size ≈ bandwidth
-- Number of proxies → distribute load, avoid rate limits, one per account if needed
-
-Respond ONLY with valid JSON (no markdown, no comments):
-{
-  "analysis": "2-3 sentence analysis of the use case and why this config is recommended",
-  "proxy_plan": [
-    {
-      "description": "US Residential Rotating — Amazon.com price scraping",
-      "count": 3,
-      "type": "residential",
-      "country": "US",
-      "region": null,
-      "session_prefix": "amz_us",
-      "sess_time": null,
-      "rotating": true,
-      "quota_bytes": 5368709120,
-      "notes": "Use round-robin. Rotate on 403 or CAPTCHA response."
-    }
-  ],
-  "rotation_strategy": "brief instructions on how to use these proxies effectively",
-  "total_proxies": 3,
-  "estimated_total_quota_gb": 15
+export interface ProxyPlan {
+  analysis: string;
+  options: ProxyOption[];      // [0] is the recommended setup, then alternatives
+  rotation_strategy: string;
 }
 
+// anyIP applies every setting through username flags, so a plan is only useful
+// if it speaks in those flags — this is the cheat sheet from
+// https://anyip.io/docs/guides/configuration.
+const FLAG_REFERENCE = `anyIP username format: user_[ID],[flag],[flag]…  (comma-separated; pipes also work)
+
+Network:   type_residential | type_mobile
+Location:  country_[ISO]                 country code, uppercase
+           region_[slug]                 requires country_
+           city_[slug]                   requires country_ and region_
+           asn_[number]                  pin one ISP/carrier
+           pool_[name]                   broad area, e.g. pool_europe (alternative to country_)
+           lat_[x],lon_[y]               closest peer to a GPS point (no country_ needed)
+Sessions:  session_[name]                sticky — same IP until it drops or sesstime expires
+           sesstime_[minutes]            sticky duration (default 7 days)
+           sessreplace_false             fail instead of silently swapping IP when the peer drops
+           sessasn_strict                a replacement IP must sit on the same ASN
+Omitting session_ entirely = rotating: a new IP on every request.`;
+
+const PLAN_SYSTEM_PROMPT = `You are an expert proxy configuration advisor for web scraping, automation, and data collection on the anyIP network.
+
+Given a use case, produce ONE recommended setup plus 2-3 genuinely different alternatives, and explain every username flag you pick.
+
+${FLAG_REFERENCE}
+
+How to think:
+- Anti-bot severity → residential blends in as home traffic; mobile carries carrier-grade NAT trust (many real users behind one IP) but costs more and is slower
+- Geography → what the target actually serves per country/region/city; do not add locations the use case has no need for
+- Session strategy → stateless scraping wants rotating; logins, carts, multi-step flows and account work want session_ (one per account/worker), usually with sesstime_
+- Volume → requests x average page size ~ bandwidth; be honest rather than generous
+- Fan-out → more proxies spread rate limits, but each one costs quota
+
+The alternatives must differ in KIND, not just in counts — e.g. a cheaper/leaner setup, a higher-trust mobile setup, a sticky-session setup for logged-in flows, an ASN- or city-pinned setup, or a pool_ setup for broad coverage. Say plainly what each one gives up.
+
 Rules:
-- count per set: 1-10 (don't over-provision)
-- quota_bytes: be realistic (1GB = 1073741824)
-- rotating=true means no sticky session; rotating=false means sticky (one IP per session)
-- session_prefix must be alphanumeric+underscore, max 12 chars
-- If multiple countries needed, create one plan item per country`;
+- options[0] is the recommended setup and must have kind "recommended"; every other entry has kind "alternative"
+- 3 or 4 options in total (recommended + 2-3 alternatives)
+- flags: list every flag that setup's username carries, one row each, with a use-case-specific reason. Do not explain flags the setup does not use.
+- username_example: a realistic full username for that setup, e.g. user_XXXX,type_residential,country_US,session_scrape_1
+- count per plan item: 1-10; quota_bytes realistic (1 GB = 1073741824)
+- rotating=true means no session_ flag; rotating=false means sticky (session_prefix is then required)
+- session_prefix: alphanumeric + underscore, max 12 chars
+- one plan item per country/region combination
+- rotation_strategy: how to drive these proxies day to day — rotation triggers, backoff, concurrency, headers. Applies to the recommended setup.
+- analysis: 2-3 sentences on the target's defences and why the recommended setup fits`;
+
+const PLAN_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["analysis", "options", "rotation_strategy"],
+  properties: {
+    analysis: { type: "string" },
+    rotation_strategy: { type: "string" },
+    options: {
+      // The 3-4 count is a prompt rule: structured outputs reject minItems > 1.
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "name", "kind", "summary", "best_for", "tradeoff",
+          "username_example", "flags", "proxy_plan",
+          "total_proxies", "estimated_total_quota_gb",
+        ],
+        properties: {
+          name: { type: "string" },
+          kind: { type: "string", enum: ["recommended", "alternative"] },
+          summary: { type: "string" },
+          best_for: { type: "string" },
+          tradeoff: { type: "string" },
+          username_example: { type: "string" },
+          total_proxies: { type: "integer" },
+          estimated_total_quota_gb: { type: "number" },
+          flags: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["flag", "value", "why"],
+              properties: {
+                flag: { type: "string" },
+                value: { type: "string" },
+                why: { type: "string" },
+              },
+            },
+          },
+          proxy_plan: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: [
+                "description", "count", "type", "country", "region", "city",
+                "asn", "pool", "session_prefix", "sess_time", "rotating",
+                "quota_bytes", "notes",
+              ],
+              properties: {
+                description: { type: "string" },
+                count: { type: "integer" },
+                type: { type: "string", enum: ["residential", "mobile"] },
+                country: { type: ["string", "null"] },
+                region: { type: ["string", "null"] },
+                city: { type: ["string", "null"] },
+                asn: { type: ["integer", "null"] },
+                pool: { type: ["string", "null"] },
+                session_prefix: { type: "string" },
+                sess_time: { type: ["integer", "null"] },
+                rotating: { type: "boolean" },
+                quota_bytes: { type: "integer" },
+                notes: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
 
 function parseJsonResponse<T>(text: string, context: string): T {
   const clean = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
@@ -81,9 +185,13 @@ function parseJsonResponse<T>(text: string, context: string): T {
 export async function generateProxyPlan(claudeKey: string, description: string): Promise<ProxyPlan> {
   const client = new Anthropic({ apiKey: claudeKey });
 
+  // Structured outputs — the schema is enforced server-side, so the reply
+  // cannot come back as prose or half-formed JSON.
   const msg = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
+    model: PLAN_MODEL,
+    max_tokens: 16000,
+    thinking: { type: "adaptive" },
+    output_config: { effort: "high", format: { type: "json_schema", schema: PLAN_SCHEMA } },
     system: PLAN_SYSTEM_PROMPT,
     messages: [{ role: "user", content: description }],
   });
@@ -93,7 +201,10 @@ export async function generateProxyPlan(claudeKey: string, description: string):
     .map((b) => (b as { type: "text"; text: string }).text)
     .join("");
 
-  return parseJsonResponse<ProxyPlan>(text, "generateProxyPlan");
+  const plan = parseJsonResponse<ProxyPlan>(text, "generateProxyPlan");
+  // Keep the recommended setup first whatever order it comes back in.
+  plan.options.sort((a, b) => (a.kind === "recommended" ? -1 : b.kind === "recommended" ? 1 : 0));
+  return plan;
 }
 
 // ── Natural language → proxy config ───────────────────────────────────────────

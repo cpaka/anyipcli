@@ -6,9 +6,51 @@ import * as api from "../api.js";
 import * as display from "../display.js";
 import * as sessions from "../sessions.js";
 import { generateProxyPlan } from "../ai.js";
-import type { ProxyPlanItem } from "../ai.js";
+import type { ProxyOption, ProxyPlanItem } from "../ai.js";
 import { getKeys } from "../config.js";
 import { ask } from "../utils.js";
+
+// One setup: what it is, when to pick it, the sets it creates, and a row per
+// username flag explaining why this use case needs it.
+function printOption(option: ProxyOption, index: number): void {
+  const badge =
+    option.kind === "recommended"
+      ? chalk.bgGreen.black(" RECOMMENDED ")
+      : chalk.bgGray.black(" ALTERNATIVE ");
+
+  console.log(
+    `  ${chalk.bold.white(`${index})`)} ${badge} ${chalk.bold.white(option.name)}  ` +
+      chalk.dim(`(${option.total_proxies} prox${option.total_proxies === 1 ? "y" : "ies"} · ~${option.estimated_total_quota_gb} GB)`)
+  );
+  console.log(`     ${chalk.white(option.summary)}`);
+  console.log(`     ${chalk.green("Best for:")} ${chalk.dim(option.best_for)}`);
+  console.log(`     ${chalk.yellow("Trade-off:")} ${chalk.dim(option.tradeoff)}`);
+  console.log(`     ${chalk.cyan("Username:")} ${chalk.white(option.username_example)}\n`);
+
+  for (const item of option.proxy_plan) {
+    const tags = [
+      chalk.cyan(item.type),
+      item.country && `country=${chalk.yellow(item.country)}`,
+      item.region && `region=${chalk.yellow(item.region)}`,
+      item.city && `city=${chalk.yellow(item.city)}`,
+      item.asn != null && `asn=${chalk.yellow(String(item.asn))}`,
+      item.pool && `pool=${chalk.yellow(item.pool)}`,
+      item.rotating ? chalk.dim("rotating") : `session=${chalk.yellow(item.session_prefix + "_N")}`,
+      item.sess_time ? `sesstime=${item.sess_time}min` : null,
+      `quota=${chalk.cyan(display.fmtBytes(item.quota_bytes))} each`,
+    ]
+      .filter(Boolean)
+      .join("  ");
+
+    console.log(`     ${chalk.bold.white(`×${item.count}`)}  ${chalk.white(item.description)}`);
+    console.log(`         ${tags}`);
+    if (item.notes) console.log(`         ${chalk.dim(item.notes)}`);
+  }
+
+  console.log();
+  display.printFlagTable(option.flags);
+  console.log();
+}
 
 export function registerGenerateCommand(program: Command): void {
   program
@@ -44,29 +86,8 @@ export function registerGenerateCommand(program: Command): void {
       display.printHeader("AI Proxy Plan");
       console.log(`  ${chalk.bold("Analysis:")}`);
       console.log(`  ${chalk.white(plan.analysis)}\n`);
-      console.log(
-        `  ${chalk.bold("Proxy Sets:")}  (${plan.total_proxies} total · ~${plan.estimated_total_quota_gb} GB quota)\n`
-      );
 
-      for (const item of plan.proxy_plan) {
-        const tags = [
-          item.type && chalk.cyan(item.type),
-          item.country && `country=${chalk.yellow(item.country)}`,
-          item.region && `region=${chalk.yellow(item.region)}`,
-          item.rotating
-            ? chalk.dim("rotating")
-            : `session=${chalk.yellow(item.session_prefix + "_N")}`,
-          item.sess_time ? `sesstime=${item.sess_time}min` : null,
-          `quota=${chalk.cyan(display.fmtBytes(item.quota_bytes))} each`,
-        ]
-          .filter(Boolean)
-          .join("  ");
-
-        console.log(`  ${chalk.bold.white(`×${item.count}`)}  ${chalk.white(item.description)}`);
-        console.log(`     ${tags}`);
-        if (item.notes) console.log(`     ${chalk.dim(item.notes)}`);
-        console.log();
-      }
+      plan.options.forEach((option, i) => printOption(option, i + 1));
 
       console.log(`  ${chalk.bold("Rotation strategy:")}`);
       console.log(`  ${chalk.dim(plan.rotation_strategy)}\n`);
@@ -76,19 +97,39 @@ export function registerGenerateCommand(program: Command): void {
         return;
       }
 
+      // ── Pick a setup ───────────────────────────────────────────────────────────
+      const choices = plan.options.map((_, i) => String(i + 1));
+      let chosen: ProxyOption | undefined;
+      for (;;) {
+        const answer = (
+          await ask(
+            `  ${chalk.yellow("Which setup should I create?")} [${choices.join("/")}, n to cancel] (1) `
+          )
+        ).trim().toLowerCase();
+
+        if (answer === "n" || answer === "no") {
+          display.info("Aborted.");
+          return;
+        }
+        chosen = plan.options[answer === "" ? 0 : Number(answer) - 1];
+        if (chosen) break;
+        display.error(`Pick one of ${choices.join(", ")} — or n to cancel.`);
+      }
+
       const confirm = await ask(
-        `  ${chalk.yellow(`Create all ${plan.total_proxies} proxies?`)} [Y/n] `
+        `  ${chalk.yellow(`Create ${chosen.total_proxies} proxies for "${chosen.name}"?`)} [Y/n] `
       );
       if (confirm.trim().toLowerCase() === "n") {
         display.info("Aborted.");
         return;
       }
+      const selected = chosen;
 
       // ── Build all payloads ─────────────────────────────────────────────────────
       const payloads: Array<{ payload: api.CreateProxyPayload; item: ProxyPlanItem; idx: number }> = [];
       // Targeting (type/country/session) is applied via username flags at
       // connect time — the v1 account payload only carries quota and metadata.
-      for (const item of plan.proxy_plan) {
+      for (const item of selected.proxy_plan) {
         for (let i = 1; i <= item.count; i++) {
           payloads.push({
             item,
@@ -105,12 +146,12 @@ export function registerGenerateCommand(program: Command): void {
       // ── Create in parallel batches of 5 ───────────────────────────────────────
       const BATCH = 5;
       const created: api.ProxyAccount[] = [];
-      const createSpinner = ora(`Creating ${plan.total_proxies} proxies…`).start();
+      const createSpinner = ora(`Creating ${selected.total_proxies} proxies…`).start();
 
       try {
         for (let start = 0; start < payloads.length; start += BATCH) {
           const batch = payloads.slice(start, start + BATCH);
-          createSpinner.text = `Creating proxies… (${Math.min(start + BATCH, payloads.length)}/${plan.total_proxies})`;
+          createSpinner.text = `Creating proxies… (${Math.min(start + BATCH, payloads.length)}/${selected.total_proxies})`;
           const results = await Promise.all(
             batch.map(({ payload }) => api.createProxy(anyipKey, payload))
           );
@@ -161,6 +202,8 @@ export function registerGenerateCommand(program: Command): void {
           `type_${item.type}`,
           item.country && `country_${item.country}`,
           item.region  && `region_${item.region}`,
+          item.city    && `city_${item.city}`,
+          item.asn != null && `asn_${item.asn}`,
           !item.rotating && item.session_prefix && `session_${item.session_prefix}_${idx}`,
           item.sess_time != null && `sesstime_${item.sess_time}`,
         ]
@@ -177,6 +220,8 @@ export function registerGenerateCommand(program: Command): void {
           password: proxy.password,
           country: item.country ?? undefined,
           region: item.region ?? undefined,
+          city: item.city ?? undefined,
+          asn: item.asn != null ? String(item.asn) : undefined,
           sessTime: item.sess_time ?? undefined,
           rotating: item.rotating,
           createdAt: new Date().toISOString(),
@@ -196,7 +241,7 @@ export function registerGenerateCommand(program: Command): void {
       ];
 
       let idx = 0;
-      for (const item of plan.proxy_plan) {
+      for (const item of selected.proxy_plan) {
         lines.push(`## ${item.description} (×${item.count})`);
         if (item.notes) lines.push(`# ${item.notes}`);
         for (let i = 0; i < item.count; i++) {

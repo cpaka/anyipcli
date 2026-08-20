@@ -42,15 +42,20 @@ function resolveManual(opts: ManOpts): { manual: string; label: string } | { lan
 
 export function registerManCommand(program: Command): void {
   program
-    .command("man")
-    .description("Show the CLI manual (en/fr/es/zh/ru built-in; other languages via Claude)")
+    .command("man [language]")
+    .aliases(["manual", "docs"])
+    .description(
+      "Show the CLI manual (en/fr/es/zh/ru built-in; other languages via Claude) — e.g. anyip manual french"
+    )
     .option("--fr", "French (Français)")
     .option("--es", "Spanish (Español)")
     .option("--zh", "Chinese (中文)")
     .option("--ru", "Russian (Русский)")
     .option("-l, --language <lang>", "Any language name or code (for unlisted languages, uses Claude)")
-    .action(async (opts: ManOpts) => {
-      const resolved = resolveManual(opts);
+    .action(async (language: string | undefined, opts: ManOpts) => {
+      // `anyip manual french` and `anyip man -l french` mean the same thing;
+      // the positional wins when both are given.
+      const resolved = resolveManual({ ...opts, language: language ?? opts.language });
 
       if ("manual" in resolved) {
         display.printHeader(`Manual — ${resolved.label}`);

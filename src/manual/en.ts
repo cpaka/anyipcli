@@ -168,6 +168,11 @@ set of proxy accounts automatically.
     # Save credential list to file
     anyip generate "residential US proxies for SEO monitoring" --output proxies.txt
 
+You get one recommended setup plus 2-3 alternatives (a leaner pool, sticky sessions
+for logged-in flows, a mobile/ASN fallback lane…), each with a table breaking down
+every username flag it uses and why the use case needs it. Pick one at the prompt —
+or use --dry-run to just compare them.
+
 The generator also saves all created sessions locally so you can immediately use
 \`anyip get\` or \`anyip proxy list\` to work with them.
 
@@ -179,6 +184,7 @@ Launch a local browser GUI to manage proxies visually:
 
     anyip serve               # opens http://127.0.0.1:3000 in your browser
     anyip serve --port 8080   # custom port
+    anyip dashboard           # same command — aliases: dashboard, dash, gui
 
 Press Ctrl+C to stop the server. The dashboard includes:
 - Account list with enable/disable toggles
@@ -193,6 +199,8 @@ Press Ctrl+C to stop the server. The dashboard includes:
 ## Manual
 
     anyip man                  # show this manual (English)
+    anyip manual french        # same command — aliases: manual, docs
+    anyip docs es              # language as a plain word or code
     anyip man --fr             # French (Français)
     anyip man --es             # Spanish (Español)
     anyip man --zh             # Chinese (中文)
