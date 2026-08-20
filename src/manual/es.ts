@@ -205,7 +205,11 @@ Lanza una interfaz gráfica local en tu navegador para gestionar proxies visualm
     anyip dashboard           # misma orden — alias: dashboard, dash, gui
     anyip serve --port 8080   # puerto personalizado
 
-Presiona Ctrl+C para detener el servidor. El panel incluye:
+Capturas: docs/images/dashboard-proxies.png (pestaña Proxies)
+          docs/images/dashboard-settings.png (ventana Ajustes)
+
+Presiona Ctrl+C para detener el servidor. Escucha solo en 127.0.0.1 y rechaza
+peticiones que no lo direccionen por un nombre loopback. El panel incluye:
 - Lista de cuentas con botones activar/desactivar
 - Formulario del generador de proxy con IA
 - Resumen de tráfico

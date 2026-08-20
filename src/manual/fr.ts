@@ -206,7 +206,11 @@ Lancez une interface graphique locale dans votre navigateur pour gérer vos prox
     anyip dashboard           # même commande — alias : dashboard, dash, gui
     anyip serve --port 8080   # port personnalisé
 
-Appuyez sur Ctrl+C pour arrêter le serveur. Le tableau de bord comprend :
+Captures : docs/images/dashboard-proxies.png (onglet Proxies)
+           docs/images/dashboard-settings.png (fenêtre Paramètres)
+
+Appuyez sur Ctrl+C pour arrêter le serveur. Il n'écoute que sur 127.0.0.1 et refuse
+les requêtes qui ne l'adressent pas par un nom loopback. Le tableau de bord comprend :
 - Liste des comptes avec boutons activer/désactiver
 - Formulaire de générateur de proxy IA
 - Aperçu du trafic

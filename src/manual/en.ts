@@ -54,10 +54,13 @@ Environment variables always take priority over stored config.
 
 Claude key is optional — only required for: anyip generate, anyip man (non-English)
 
+### Option D — Dashboard GUI (when you would rather not use the terminal)
+    anyip serve      # gear icon beside + New Proxy → API keys → Save
+    A blank field keeps the stored key; the trash button forgets it on Save.
+    Works before any key is stored, so it can set up a fresh machine.
+
 ### View stored config
     anyip config show          # shows masked keys + config file path
-
-Keys can also be saved from the dashboard: anyip serve → gear icon → Settings.
 
 Storage: config.json and sessions.json are plain JSON, written 0600 in a 0700
 directory (owner-only) and re-hardened after every write. The dashboard writes
@@ -211,7 +214,11 @@ Launch a local browser GUI to manage proxies visually:
     anyip serve --port 8080   # custom port
     anyip dashboard           # same command — aliases: dashboard, dash, gui
 
-Press Ctrl+C to stop the server. The dashboard includes:
+Screenshot: docs/images/dashboard-proxies.png (Proxies tab)
+            docs/images/dashboard-settings.png (Settings modal)
+
+Press Ctrl+C to stop the server. It listens on 127.0.0.1 only and refuses requests
+that did not address it by a loopback hostname. The dashboard includes:
 - Account list with enable/disable toggles
 - AI proxy generator form
 - Traffic overview

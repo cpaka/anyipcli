@@ -78,14 +78,34 @@ anyip generate "scrape Amazon prices across 5 US cities, rotating IPs"
 Both keys come from a web dashboard — see
 [Where to get the keys](#-where-to-get-the-keys) above for the exact pages.
 
-### Option A — Dashboard *(GUI — no terminal typing)*
+### Option A — Interactive prompt *(recommended — keys stay out of shell history)*
+```bash
+anyip config set-keys
+#  anyIP API key      : ************
+#  Claude API key     : ************
+```
+
+### Option B — Flags
+```bash
+anyip config set-keys --anyip YOUR_ANYIP_KEY --claude YOUR_CLAUDE_KEY
+```
+
+### Option C — Environment variables *(perfect for CI/CD)*
+```bash
+export ANYIP_API_KEY=your_anyip_key
+export ANTHROPIC_API_KEY=your_claude_key  # optional — only needed for AI commands
+```
+
+### Option D — Dashboard *(GUI — when you would rather not type in a terminal)*
 
 ```bash
 anyip serve      # or: anyip dashboard / dash / gui
 ```
 
-The dashboard opens at `http://127.0.0.1:4747`. Click the ⚙ gear beside
-**+ New Proxy**, paste each key into the **API keys** section, and press **Save**.
+Click the ⚙ gear beside **+ New Proxy**, paste each key into the **API keys**
+section, then **Save**.
+
+![Settings modal](docs/images/dashboard-settings.png)
 
 | In the modal | What it does |
 |--------------|--------------|
@@ -97,31 +117,13 @@ The dashboard opens at `http://127.0.0.1:4747`. Click the ⚙ gear beside
 Save applies immediately — no restart. The server reads the stored key on every
 request, and the page reloads your account details as soon as the key changes.
 
-**You do not need a key to open the dashboard**, which makes this the easiest way
-to set up a fresh machine: run `anyip serve`, save both keys in the modal, carry
-on. Until a key is stored the account bar shows a warning and the Account/Stats
-tabs stay empty; the Proxies tab still lists whatever sessions are saved locally.
+**You do not need a key to open the dashboard**, which makes this a workable way
+to set up a fresh machine: run `anyip serve`, save both keys, carry on. Until a
+key is stored the account bar shows a warning and the Account/Stats tabs stay
+empty; the Proxies tab still lists whatever sessions are saved locally.
 
 Only the last four characters of a stored key are ever sent back to the page, and
 the file is written owner-only — see [Local Data & Privacy](#-local-data--privacy).
-
-### Option B — Interactive prompt *(safest in a terminal — keys stay out of shell history)*
-```bash
-anyip config set-keys
-#  anyIP API key      : ************
-#  Claude API key     : ************
-```
-
-### Option C — Flags
-```bash
-anyip config set-keys --anyip YOUR_ANYIP_KEY --claude YOUR_CLAUDE_KEY
-```
-
-### Option D — Environment variables *(perfect for CI/CD)*
-```bash
-export ANYIP_API_KEY=your_anyip_key
-export ANTHROPIC_API_KEY=your_claude_key  # optional — only needed for AI commands
-```
 
 > 🟡 **Environment variables always take priority** over stored config (an
 > exported-but-empty variable counts as unset and falls through to the stored key).
@@ -245,7 +247,7 @@ anyip proxy list --json                   # each session plus its `proxy` string
 ```
   #   ACCOUNT      NETWORK  TYPE    SESSION   CONN    LOCATION                            CREATED
   1   user_3c035b  Mobile   Sticky  dced3cd8  SOCKS5  FR · iledefrance · paris · ASN3215  131d ago
-      portal.anyip.io:1080:user_3c035b,type_mobile,country_FR,…,session_dced3cd8:4fc556   last IP 92.184.97.72
+      portal.anyip.io:1080:user_3c035b,type_mobile,country_FR,…,session_dced3cd8:••••••   last IP 92.184.97.72
 ```
 
 ```bash
@@ -474,7 +476,9 @@ to your own Anthropic key.
 
 ## 🌐 Web Dashboard
 
-Prefer a GUI? Launch a local browser interface:
+Prefer a GUI? `anyip serve` runs a small local server and opens the proxy manager
+in your browser — everything it shows comes from the same config and session
+store the CLI uses, so the two stay in step.
 
 ```bash
 anyip serve               # opens http://127.0.0.1:4747
@@ -482,40 +486,54 @@ anyip serve --port 8080   # custom port
 anyip dashboard           # same command — aliases: dashboard, dash, gui
 ```
 
-Press `Ctrl+C` to stop.
+Press `Ctrl+C` to stop. It listens on `127.0.0.1` only and refuses requests that
+did not address it by a loopback hostname.
 
-**Dashboard features:**
-- 💾 **Saved sessions** — your locally stored proxies load automatically on startup
-- 📋 Proxy account table with enable/disable toggles
-- ➕ New proxy creation form (HTTP or SOCKS5, sticky or rotating, by country)
-- 🔄 **Change IP** — rotate any sticky session from its row (see below)
-- 🎛️ Network, session type and session name each in their own column, with
-  HTTP / HTTPS / SOCKS5 selectable both when creating a proxy and in the
-  proxy-string format picker
-- ⚙️ **Settings** — API keys and dashboard colours, next to *+ New Proxy*
-- 📈 Stats breakdown by network type, connection type, and location
-- 📋 Copy / export proxy strings in any format
+![anyIP Proxy Manager — Proxies tab](docs/images/dashboard-proxies.png)
 
-### Settings
+### The tabs
 
-The gear button beside *+ New Proxy* opens a modal with two sections:
+| Tab | What it shows |
+|-----|---------------|
+| **Proxies** | Every locally saved proxy, with the badge counting them — the same data as `anyip proxy list` |
+| **Account** | Your anyIP account, plan and quota, with enable/disable toggles per proxy account |
+| **Stats** | Totals by network type, connection type and location |
+| **Manual** | The built-in manual, in any of the five bundled languages |
+
+### The Proxies tab
+
+The toolbar mirrors `anyip proxy list`: a search box (name, country, tag), a
+network filter, a session filter, and a format picker — `host:port:user:pass`,
+`user:pass@host:port`, `http://`, `https://` or `socks5://` — which rewrites
+every row instantly. **Copy all** and **Export .txt** take whatever the filters
+currently show, in the chosen format.
+
+Each row carries three actions, in order:
+
+| Button | What it does |
+|--------|--------------|
+| 📋 Copy | Copies that row's proxy string in the selected format |
+| 🔄 Change IP | Rotates a sticky session through its [rotation link](https://anyip.io/docs/guides/sessions-and-rotation) — disabled on rotating rows, which already get a new IP per request |
+| 🗑 Delete | Removes the locally saved proxy, after a confirmation. The proxy account itself stays on anyIP |
+
+**+ New Proxy** opens the creation form: network type, session type and name,
+connection (HTTP / HTTPS / SOCKS5), country, password, quantity and label.
+
+### Settings (⚙)
+
+The gear beside **+ New Proxy** holds two things:
 
 - **API keys** — store or replace the anyIP and Anthropic keys without leaving the
-  dashboard. Only the last four characters are ever sent back to the browser; leave
-  a field blank to keep the current key, or use the trash button to forget one. A key
-  supplied through `ANYIP_API_KEY` / `ANTHROPIC_API_KEY` is shown as such and still
-  wins over anything saved here.
-- **Appearance** — primary colour, tint and hover shade, with presets and a live
-  preview. Tint and hover are derived from the primary until you set them by hand.
-  The palette is stored in the same config file as the keys and is inlined into the
-  page on load, so a customised dashboard paints correctly on the first frame.
+  browser; see [Authentication → Option D](#-authentication) for what each control
+  does and how the keys are stored.
+- **Appearance** — primary colour, tint and hover shade, with six presets and a
+  live preview that repaints the page as you pick. Tint and hover follow the
+  primary until you set them by hand; *Reset* returns to anyIP purple. The palette
+  is saved next to the keys and inlined into the page at load, so a customised
+  dashboard paints correctly on the first frame.
 
-### Change IP (rotation)
-
-Each sticky row has a 🔄 button that calls the account's
-[rotation link](https://anyip.io/docs/guides/sessions-and-rotation), so the next
-connection on that session gets a fresh IP. Rows that already rotate on every
-connection show the button disabled — there is no sticky IP to change.
+> The screenshots above are from a real session with the passwords masked; the
+> live view shows the full proxy string.
 
 ---
 

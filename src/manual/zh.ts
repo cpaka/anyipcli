@@ -197,7 +197,10 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     anyip dashboard           # 同一命令 — 别名：dashboard、dash、gui
     anyip serve --port 8080   # 自定义端口
 
-按 Ctrl+C 停止服务。控制台功能包括：
+截图：docs/images/dashboard-proxies.png（Proxies 标签页）
+      docs/images/dashboard-settings.png（设置窗口）
+
+按 Ctrl+C 停止服务。仅监听 127.0.0.1，并拒绝非 loopback 主机名的请求。控制台功能包括：
 - 代理账户列表（支持启用/禁用）
 - AI 代理生成表单
 - 流量概览
