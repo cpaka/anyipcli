@@ -223,6 +223,9 @@ that did not address it by a loopback hostname. The dashboard includes:
 - AI proxy generator form
 - Traffic overview
 - Session viewer
+- Checkboxes for multi-select: copy, export, change IP or delete many at once
+- Passwords shown as ***** until you press Show passwords (Copy/Export use the real one)
+- Country flag per row, 🌐 Global when no country is pinned
 - Change IP button on every sticky row (rotation link)
 - Settings (gear, next to + New Proxy): API keys and dashboard colours
 

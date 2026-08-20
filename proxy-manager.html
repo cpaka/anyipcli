@@ -65,9 +65,15 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 .session-name { font-size: .82rem; background: var(--brand-light); color: var(--brand-dark);
   padding: 2px 6px; border-radius: 4px; }
 .row-actions { white-space: nowrap; }
+.flag { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: .95rem; line-height: 1; vertical-align: -1px; margin-right: .2rem; }
 .row-actions .btn + .btn { margin-left: .25rem; }
 .settings-section { font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
   color: #6c757d; font-weight: 700; }
+button.settings-section { border: 0; background: none; }
+button.settings-section:hover { color: var(--brand); }
+#appearanceChevron { font-size: .8rem; }
+#appearanceSwatch { background: var(--brand); cursor: pointer; }
 .color-field { display: flex; align-items: center; gap: .5rem; }
 .color-field input[type=color] { width: 46px; height: 38px; padding: 2px;
   border: 1px solid #dee2e6; border-radius: 6px; background: #fff; cursor: pointer; }
@@ -200,6 +206,10 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           <option value="sticky">Sticky</option>
           <option value="rotating">Rotating</option>
         </select>
+        <button class="btn btn-sm btn-outline-primary" id="togglePw" type="button"
+          title="Show or hide the passwords in the proxy strings">
+          <i class="bi bi-eye"></i> Show passwords
+        </button>
         <select class="form-select form-select-sm" id="formatSelect" style="max-width:240px">
           <option value="hostuser">host:port:user:pass</option>
           <option value="userhost">user:pass@host:port</option>
@@ -207,17 +217,25 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           <option value="https">https://user:pass@host:port</option>
           <option value="socks5">socks5://user:pass@host:port</option>
         </select>
-        <div class="ms-auto d-flex gap-2">
-          <button class="btn btn-sm btn-outline-primary" id="refreshBtn">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
-          </button>
-          <button class="btn btn-sm btn-outline-primary" id="copyAllBtn">
-            <i class="bi bi-clipboard"></i> Copy all
-          </button>
-          <button class="btn btn-sm btn-outline-primary" id="exportBtn">
-            <i class="bi bi-download"></i> Export .txt
-          </button>
-        </div>
+      </div>
+
+      <div class="filter-bar d-flex flex-wrap gap-2 align-items-center" id="bulkBar" hidden>
+        <span class="fw-semibold" id="bulkCount"></span>
+        <button class="btn btn-sm btn-outline-primary" id="bulkCopy">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <button class="btn btn-sm btn-outline-primary" id="bulkExport">
+          <i class="bi bi-download"></i> Export .txt
+        </button>
+        <button class="btn btn-sm btn-outline-primary" id="bulkRotate">
+          <i class="bi bi-arrow-repeat"></i> Change IP
+        </button>
+        <button class="btn btn-sm btn-outline-danger" id="bulkDelete">
+          <i class="bi bi-trash"></i> Delete
+        </button>
+        <button class="btn btn-sm btn-link ms-auto text-decoration-none" id="bulkClear">
+          Clear selection
+        </button>
       </div>
 
       <div class="card stat-card">
@@ -225,14 +243,18 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           <table class="table table-hover proxy-table mb-0 align-middle">
             <thead>
               <tr>
-                <th class="ps-3">Network</th>
+                <th class="ps-3" style="width:38px">
+                  <input class="form-check-input mt-0" type="checkbox" id="selectAll"
+                    title="Select every proxy in the current view" />
+                </th>
+                <th>Network</th>
                 <th>Type</th>
                 <th>Session</th>
                 <th>Conn</th>
                 <th>Location</th>
                 <th>Proxy string</th>
                 <th>Created</th>
-                <th class="text-end pe-3"></th>
+                <th class="text-end pe-3">Actions</th>
               </tr>
             </thead>
             <tbody id="proxyTableBody"></tbody>
@@ -332,7 +354,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           <label class="col-sm-3 col-form-label">Location :</label>
           <div class="col-sm-9">
             <div class="toggle-group" data-field="locationType">
-              <button type="button" class="toggle-btn active" data-value="worldwide">Worldwide</button>
+              <button type="button" class="toggle-btn active" data-value="worldwide">🌐 Global</button>
               <button type="button" class="toggle-btn" data-value="country">Country</button>
             </div>
           </div>
@@ -409,7 +431,7 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
       <div class="modal-body">
         <p class="mb-1">Remove <code id="deleteTarget"></code> from your saved proxies?</p>
         <p class="text-muted small mb-0">
-          The proxy account itself stays on anyIP — only the locally saved entry goes away.
+          The proxy accounts themselves stay on anyIP — only the locally saved entries go away.
         </p>
       </div>
       <div class="modal-footer">
@@ -472,15 +494,33 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
             </div>
             <div class="form-text" id="claudeKeyHint"></div>
             <div class="form-text">
-              Optional — only used by the AI proxy generator. Create one at
+              Create one at
               <a href="https://platform.claude.com/settings/workspaces/default/keys" target="_blank" rel="noopener">platform.claude.com → API keys</a>.
             </div>
+            <div class="form-text fst-italic">Optional — only used by the AI proxy generator.</div>
           </div>
         </div>
 
         <hr class="my-4" />
 
-        <div class="settings-section mb-3">Appearance</div>
+        <div class="row align-items-center mb-3">
+          <div class="col-sm-3">
+            <button type="button" class="settings-section btn btn-link p-0 text-decoration-none d-flex align-items-center gap-2"
+              id="appearanceToggle" data-bs-toggle="collapse" data-bs-target="#appearanceBody"
+              aria-expanded="false" aria-controls="appearanceBody">
+              <i class="bi bi-chevron-down" id="appearanceChevron"></i> Appearance
+            </button>
+          </div>
+          <div class="col-sm-9">
+            <!-- Same class as the swatches below, so it sits exactly where the
+                 first preset does and reads as "the colour in use". -->
+            <button type="button" class="preset" id="appearanceSwatch"
+              data-bs-toggle="collapse" data-bs-target="#appearanceBody" aria-controls="appearanceBody"
+              title="Current primary colour — click to open the palette"></button>
+          </div>
+        </div>
+
+        <div class="collapse" id="appearanceBody">
 
         <div class="row mb-3 align-items-center">
           <label class="col-sm-3 col-form-label">Presets :</label>
@@ -540,6 +580,8 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
           </div>
         </div>
 
+        </div><!-- /#appearanceBody -->
+
         <div id="settingsAlert" class="alert alert-danger mt-3" hidden></div>
 
       </div>
@@ -589,7 +631,7 @@ var COUNTRIES = [
 var state = {
   sessions: null, user: null, accountsLoaded: false, manualLoaded: false,
   settings: null, themeTouched: {}, clearKeys: { anyipKey:false, claudeKey:false },
-  pendingDelete: null,
+  pendingBulk: null, selected: new Set(), showPasswords: false,
 };
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
@@ -617,6 +659,16 @@ function toast(msg, variant) {
   el.className = 'toast align-items-center border-0 text-bg-' + (variant || 'dark');
   document.getElementById('toastBody').textContent = msg;
   bootstrap.Toast.getOrCreateInstance(el, {delay:2400}).show();
+}
+// ISO 3166-1 alpha-2 → regional-indicator pair, e.g. FR → 🇫🇷
+function flagEmoji(code) {
+  if (!code || !/^[a-zA-Z]{2}$/.test(code)) return '';
+  return String.fromCodePoint.apply(String, code.toUpperCase().split('').map(function(ch){
+    return 0x1F1E6 + ch.charCodeAt(0) - 65;
+  }));
+}
+function plural(n, one, many) {
+  return n + ' ' + (n === 1 ? one : many);
 }
 function randSession() {
   return 'randSession' + Math.floor(1000 + Math.random()*9000);
@@ -700,7 +752,7 @@ function renderStats(list) {
   document.getElementById('statConnection').innerHTML = breakdown(connCounts, total, function(v){return v.toUpperCase();});
 
   var locCounts = {};
-  list.forEach(function(s){ var k=s.country||'Worldwide'; locCounts[k]=(locCounts[k]||0)+1; });
+  list.forEach(function(s){ var k=s.country||'Global'; locCounts[k]=(locCounts[k]||0)+1; });
   document.getElementById('statLocation').innerHTML = breakdown(locCounts, total, function(v){return v;});
 }
 function breakdown(counts, total, fmt) {
@@ -842,6 +894,11 @@ function renderProxies(list) {
 
   tbody.innerHTML = view.map(function(s) {
     var str = buildProxyStr(s, fmt);
+    // Shoulder-surfing and screenshots: the password is hidden until asked for,
+    // but Copy and Export always hand over the real string.
+    var shown = state.showPasswords
+      ? str
+      : buildProxyStr(Object.assign({}, s, { password: '*****' }), fmt);
     var net = s.networkType==='mobile'
       ? '<span class="cell-icon"><i class="bi bi-phone text-primary"></i> Mobile</span>'
       : '<span class="cell-icon"><i class="bi bi-house-door text-primary"></i> Residential</span>';
@@ -853,13 +910,17 @@ function renderProxies(list) {
       : '<code class="session-name">'+esc(s.name)+'</code>';
     var conn = '<span class="badge bg-secondary text-uppercase">'+esc(s.connectionType||'http')+'</span>';
     var loc = s.country
-      ? '<span class="badge bg-light text-dark border"><i class="bi bi-geo-alt"></i> '+esc(s.country)+'</span>'
-      : '<span class="text-muted small">Worldwide</span>';
+      ? '<span class="badge bg-light text-dark border"><span class="flag">'+flagEmoji(s.country)+'</span> '+esc(s.country)+'</span>'
+      : '<span class="text-muted small"><span class="flag">🌐</span> Global</span>';
     var tag = s.userTag ? '<div class="text-muted" style="font-size:.75rem">'+esc(s.userTag)+'</div>' : '';
     return '<tr>' +
-      '<td class="ps-3">'+net+tag+'</td>' +
+      '<td class="ps-3">' +
+        '<input class="form-check-input mt-0 row-check" type="checkbox" data-n="'+esc(s.name)+'"' +
+        (state.selected.has(s.name) ? ' checked' : '') + ' />' +
+      '</td>' +
+      '<td>'+net+tag+'</td>' +
       '<td>'+type+'</td><td>'+ses+'</td><td>'+conn+'</td><td>'+loc+'</td>' +
-      '<td><code>'+esc(str)+'</code></td>' +
+      '<td><code>'+esc(shown)+'</code></td>' +
       '<td><span class="text-muted small" title="'+esc(s.createdAt||'')+'">'+timeAgo(s.createdAt)+'</span></td>' +
       '<td class="text-end pe-3 row-actions">' +
         '<button class="btn btn-sm btn-outline-primary copy-row" data-v="'+esc(str)+'" title="Copy"><i class="bi bi-clipboard"></i></button>' +
@@ -877,6 +938,21 @@ function renderProxies(list) {
         .catch(function(){toast('Copy failed','danger');});
     });
   });
+  // Selection survives re-renders (filters, format changes, refresh) but must
+  // not keep names that have since been deleted.
+  var visible = {};
+  view.forEach(function(s){ visible[s.name] = true; });
+  Array.from(state.selected).forEach(function(n){ if (!state.sessions.some(function(s){return s.name===n;})) state.selected.delete(n); });
+
+  tbody.querySelectorAll('.row-check').forEach(function(box){
+    box.addEventListener('change', function(){
+      if (box.checked) state.selected.add(box.dataset.n);
+      else state.selected.delete(box.dataset.n);
+      updateBulkBar();
+    });
+  });
+  updateBulkBar();
+
   tbody.querySelectorAll('.rotate-row').forEach(function(btn){
     btn.addEventListener('click',function(){
       var n = btn.dataset.n;
@@ -897,63 +973,147 @@ function renderProxies(list) {
     btn.addEventListener('click',function(){ confirmDelete(btn.dataset.n); });
   });
 }
+/* ── Bulk selection ─────────────────────────────────────────────────────────── */
+function selectedSessions() {
+  return (state.sessions || []).filter(function(s){ return state.selected.has(s.name); });
+}
+
+function updateBulkBar() {
+  var n = state.selected.size;
+  var bar = document.getElementById('bulkBar');
+  bar.hidden = n === 0;
+  document.getElementById('bulkCount').textContent =
+    n + ' selected' + (n ? ' · ' + selectedSessions().filter(function(s){return !s.rotating;}).length + ' sticky' : '');
+
+  // The header box reflects the current view: all / none / some.
+  var boxes = Array.from(document.querySelectorAll('#proxyTableBody .row-check'));
+  var checked = boxes.filter(function(b){ return b.checked; }).length;
+  var all = document.getElementById('selectAll');
+  all.checked = boxes.length > 0 && checked === boxes.length;
+  all.indeterminate = checked > 0 && checked < boxes.length;
+}
+
+function clearSelection() {
+  state.selected.clear();
+  document.querySelectorAll('#proxyTableBody .row-check').forEach(function(b){ b.checked = false; });
+  updateBulkBar();
+}
+
+function initBulkActions() {
+  document.getElementById('selectAll').addEventListener('change', function(){
+    var on = this.checked;
+    document.querySelectorAll('#proxyTableBody .row-check').forEach(function(b){
+      b.checked = on;
+      if (on) state.selected.add(b.dataset.n); else state.selected.delete(b.dataset.n);
+    });
+    updateBulkBar();
+  });
+
+  document.getElementById('bulkClear').addEventListener('click', clearSelection);
+
+  document.getElementById('bulkExport').addEventListener('click', function(){
+    var fmt = document.getElementById('formatSelect').value;
+    var sessions = selectedSessions();
+    if (!sessions.length) return;
+    var text = sessions.map(function(s){ return buildProxyStr(s, fmt); }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], {type:'text/plain'}));
+    a.download = 'proxies-' + new Date().toISOString().slice(0,10) + '.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Exported ' + plural(sessions.length, 'proxy', 'proxies'), 'success');
+  });
+
+  document.getElementById('bulkCopy').addEventListener('click', function(){
+    var fmt = document.getElementById('formatSelect').value;
+    var lines = selectedSessions().map(function(s){ return buildProxyStr(s, fmt); }).join('\n');
+    if (!lines) return;
+    navigator.clipboard.writeText(lines)
+      .then(function(){ toast('Copied ' + plural(state.selected.size, 'proxy', 'proxies'), 'success'); })
+      .catch(function(){ toast('Copy failed', 'danger'); });
+  });
+
+  document.getElementById('bulkRotate').addEventListener('click', function(){
+    // Rotating proxies have no sticky IP to change — skip rather than fail them.
+    var targets = selectedSessions().filter(function(s){ return !s.rotating; });
+    var skipped = state.selected.size - targets.length;
+    if (!targets.length) {
+      toast('Nothing to rotate — every selected proxy already rotates per request');
+      return;
+    }
+    var btn = this;
+    btn.disabled = true;
+    var done = 0, failed = 0;
+    Promise.all(targets.map(function(s){
+      return apiPost('/api/sessions/'+encodeURIComponent(s.name)+'/rotate', {})
+        .then(function(){ done++; })
+        .catch(function(){ failed++; });
+    })).then(function(){
+      btn.disabled = false;
+      toast(
+        'Changed IP on ' + plural(done, 'proxy', 'proxies') +
+          (failed ? ' · ' + failed + ' failed' : '') +
+          (skipped ? ' · ' + skipped + ' already rotating' : ''),
+        failed ? 'warning' : 'success'
+      );
+    });
+  });
+
+  document.getElementById('bulkDelete').addEventListener('click', function(){
+    confirmDelete(selectedSessions().map(function(s){ return s.name; }));
+  });
+}
+
 /* Native confirm() blocks the page and looks nothing like the rest of the UI. */
-function confirmDelete(name) {
-  state.pendingDelete = name;
-  document.getElementById('deleteTarget').textContent = name;
+function confirmDelete(target) {
+  var names = Array.isArray(target) ? target : [target];
+  if (!names.length) return;
+  state.pendingBulk = names;
+  document.getElementById('deleteTarget').textContent =
+    names.length === 1 ? names[0] : names.length + ' proxies';
   bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).show();
 }
 
 function initDeleteModal() {
   document.getElementById('deleteConfirmBtn').addEventListener('click', function(){
-    var n = state.pendingDelete;
-    if (!n) return;
+    var names = state.pendingBulk || [];
+    if (!names.length) return;
     var btn = this;
     btn.disabled = true;
-    apiDelete('/api/sessions/'+encodeURIComponent(n)).then(function(){
+    Promise.all(names.map(function(n){
+      return apiDelete('/api/sessions/'+encodeURIComponent(n)).then(function(){ return true; })
+        .catch(function(){ return false; });
+    })).then(function(results){
+      var ok = results.filter(Boolean).length;
+      var failed = results.length - ok;
+      names.forEach(function(n){ state.selected.delete(n); });
       state.sessions = null;
       loadSessions(true).then(function(l){ renderStats(l); renderProxies(l); });
-      toast('Deleted "'+n+'"');
-    }).catch(function(e){
-      toast('Error: '+e,'danger');
+      toast(
+        names.length === 1 ? 'Deleted "'+names[0]+'"' : 'Deleted ' + plural(ok, 'proxy', 'proxies'),
+        failed ? 'warning' : 'dark'
+      );
     }).then(function(){
       btn.disabled = false;
-      state.pendingDelete = null;
+      state.pendingBulk = null;
       bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
     });
   });
 }
 
 function initProxiesTab() {
+  document.getElementById('togglePw').addEventListener('click', function(){
+    state.showPasswords = !state.showPasswords;
+    this.innerHTML = state.showPasswords
+      ? '<i class="bi bi-eye-slash"></i> Hide passwords'
+      : '<i class="bi bi-eye"></i> Show passwords';
+    if (state.sessions) renderProxies(state.sessions);
+  });
+
   ['searchInput','filterNetwork','filterSession','formatSelect'].forEach(function(id){
     var el=document.getElementById(id);
     el.addEventListener('input',function(){if(state.sessions)renderProxies(state.sessions);});
     el.addEventListener('change',function(){if(state.sessions)renderProxies(state.sessions);});
-  });
-  document.getElementById('refreshBtn').addEventListener('click',function(){
-    state.sessions=null;
-    loadSessions(true).then(function(l){renderStats(l);renderProxies(l);toast('Refreshed','success');});
-  });
-  document.getElementById('copyAllBtn').addEventListener('click',function(){
-    if(!state.sessions||!state.sessions.length){toast('Nothing to copy');return;}
-    var fmt=document.getElementById('formatSelect').value;
-    var lines=filtered(state.sessions).map(function(s){return buildProxyStr(s,fmt);}).join('\n');
-    if(!lines){toast('Nothing to copy');return;}
-    navigator.clipboard.writeText(lines)
-      .then(function(){toast('Copied '+filtered(state.sessions).length+' proxies','success');})
-      .catch(function(){toast('Copy failed','danger');});
-  });
-  document.getElementById('exportBtn').addEventListener('click',function(){
-    if(!state.sessions||!state.sessions.length){toast('Nothing to export');return;}
-    var fmt=document.getElementById('formatSelect').value;
-    var view=filtered(state.sessions);
-    if(!view.length){toast('Nothing to export');return;}
-    var text=view.map(function(s){return buildProxyStr(s,fmt);}).join('\n');
-    var a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));
-    a.download='proxies-'+new Date().toISOString().slice(0,10)+'.txt';
-    a.click();
-    toast('Exported '+view.length+' proxies','success');
   });
 }
 
@@ -1082,7 +1242,7 @@ function initModal() {
   var sel=document.getElementById('countryCode');
   COUNTRIES.forEach(function(c){
     var o=document.createElement('option');
-    o.value=c[0]; o.textContent=c[1]+' ('+c[0]+')'; sel.appendChild(o);
+    o.value=c[0]; o.textContent=flagEmoji(c[0])+'  '+c[1]+' ('+c[0]+')'; sel.appendChild(o);
   });
   sel.value='US';
 
@@ -1227,6 +1387,9 @@ function setThemeInputs(theme) {
   markActivePreset(theme.brand);
 }
 function markActivePreset(brand) {
+  var swatch = document.getElementById('appearanceSwatch');
+  if (swatch) swatch.style.background = brand;
+
   Array.prototype.forEach.call(document.querySelectorAll('#themePresets .preset'), function(b){
     b.classList.toggle('active', b.dataset.color === brand.toLowerCase());
   });
@@ -1263,6 +1426,12 @@ function loadSettings(force) {
 }
 
 function initSettings() {
+  // Chevron follows the section: down when folded, up when open.
+  var appearance = document.getElementById('appearanceBody');
+  var chevron = document.getElementById('appearanceChevron');
+  appearance.addEventListener('shown.bs.collapse', function(){ chevron.className = 'bi bi-chevron-up'; });
+  appearance.addEventListener('hidden.bs.collapse', function(){ chevron.className = 'bi bi-chevron-down'; });
+
   var presets = document.getElementById('themePresets');
   THEME_PRESETS.forEach(function(p){
     var b = document.createElement('button');
@@ -1403,6 +1572,7 @@ document.addEventListener('DOMContentLoaded',function(){
   initModal();
   initSettings();
   initDeleteModal();
+  initBulkActions();
   initNavbar();
 
   loadSettings().then(function(s){ applyTheme(s.theme); }).catch(function(){ /* keep defaults */ });

@@ -185,7 +185,7 @@ export function printSessionsTable(
         s.region,
         s.city,
         s.asn && `ASN${s.asn}`,
-      ].filter(Boolean).join(" · ") || "Worldwide",
+      ].filter(Boolean).join(" · ") || "Global",
     created: timeAgo(s.createdAt),
     lastIp: s.lastIp ?? "",
     proxy: buildProxyString(s, format),

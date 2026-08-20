@@ -214,6 +214,9 @@ peticiones que no lo direccionen por un nombre loopback. El panel incluye:
 - Formulario del generador de proxy con IA
 - Resumen de tráfico
 - Visor de sesiones
+- Casillas para selección múltiple: copiar, exportar, cambiar IP o borrar en lote
+- Contraseñas ocultas (*****) hasta pulsar Show passwords; Copiar/Exportar usan la real
+- Bandera del país por fila, 🌐 Global cuando no hay país fijado
 - Botón de cambio de IP en cada sesión sticky (enlace de rotación)
 - Ajustes (engranaje, junto a + New Proxy): claves API y colores
 

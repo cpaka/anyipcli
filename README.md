@@ -503,10 +503,16 @@ did not address it by a loopback hostname.
 ### The Proxies tab
 
 The toolbar mirrors `anyip proxy list`: a search box (name, country, tag), a
-network filter, a session filter, and a format picker — `host:port:user:pass`,
-`user:pass@host:port`, `http://`, `https://` or `socks5://` — which rewrites
-every row instantly. **Copy all** and **Export .txt** take whatever the filters
-currently show, in the chosen format.
+network filter, a session filter, a **Show passwords** toggle, and a format
+picker — `host:port:user:pass`, `user:pass@host:port`, `http://`, `https://` or
+`socks5://` — which rewrites every row instantly.
+
+Passwords are printed as `*****` until you press **Show passwords**, so the tab
+is safe to have open in a shared room or a screen share. **Copy** and
+**Export .txt** always hand over the real string regardless of that toggle.
+
+Location shows the country flag (`🇫🇷 FR`), or `🌐 Global` for a proxy with no
+country pinned.
 
 Each row carries three actions, in order:
 
@@ -515,6 +521,22 @@ Each row carries three actions, in order:
 | 📋 Copy | Copies that row's proxy string in the selected format |
 | 🔄 Change IP | Rotates a sticky session through its [rotation link](https://anyip.io/docs/guides/sessions-and-rotation) — disabled on rotating rows, which already get a new IP per request |
 | 🗑 Delete | Removes the locally saved proxy, after a confirmation. The proxy account itself stays on anyIP |
+
+### Acting on several proxies at once
+
+Tick the checkbox on any row — or the one in the header, which takes everything
+the current filters show — and a bar appears with the same actions applied to the
+whole selection:
+
+| Button | What it does |
+|--------|--------------|
+| 📋 Copy | All selected proxy strings, one per line, in the chosen format |
+| ⬇ Export .txt | The same list as a downloaded `proxies-YYYY-MM-DD.txt` |
+| 🔄 Change IP | Rotates every selected sticky session in parallel; rows that already rotate are skipped and counted in the result |
+| 🗑 Delete | Removes them all, behind one confirmation |
+
+The selection survives filtering, searching and format changes, so you can narrow
+to `--network mobile`, tick them, widen again, and still act on the same set.
 
 **+ New Proxy** opens the creation form: network type, session type and name,
 connection (HTTP / HTTPS / SOCKS5), country, password, quantity and label.
@@ -526,14 +548,15 @@ The gear beside **+ New Proxy** holds two things:
 - **API keys** — store or replace the anyIP and Anthropic keys without leaving the
   browser; see [Authentication → Option D](#-authentication) for what each control
   does and how the keys are stored.
-- **Appearance** — primary colour, tint and hover shade, with six presets and a
-  live preview that repaints the page as you pick. Tint and hover follow the
-  primary until you set them by hand; *Reset* returns to anyIP purple. The palette
-  is saved next to the keys and inlined into the page at load, so a customised
-  dashboard paints correctly on the first frame.
+- **Appearance** — folded away behind a chevron, with a circle showing the colour
+  currently in use; clicking either opens it. Inside: primary colour, tint and
+  hover shade, six presets, and a live preview that repaints the page as you pick.
+  Tint and hover follow the primary until you set them by hand; *Reset* returns to
+  anyIP purple. The palette is saved next to the keys and inlined into the page at
+  load, so a customised dashboard paints correctly on the first frame.
 
-> The screenshots above are from a real session with the passwords masked; the
-> live view shows the full proxy string.
+> The screenshots above are from a real session; the account email is replaced
+> and the passwords are masked by the dashboard itself.
 
 ---
 

@@ -215,6 +215,9 @@ les requêtes qui ne l'adressent pas par un nom loopback. Le tableau de bord com
 - Formulaire de générateur de proxy IA
 - Aperçu du trafic
 - Visionneuse de sessions
+- Cases à cocher pour la sélection multiple : copier, exporter, changer d'IP ou supprimer en lot
+- Mots de passe masqués (*****) jusqu'à « Show passwords » ; Copier/Exporter utilisent le vrai
+- Drapeau du pays par ligne, 🌐 Global si aucun pays n'est fixé
 - Bouton « changer d'IP » sur chaque session sticky (lien de rotation)
 - Paramètres (roue dentée, à côté de + New Proxy) : clés API et couleurs
 
