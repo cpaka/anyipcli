@@ -432,7 +432,12 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
       </div>
       <div class="modal-body">
 
-        <div class="settings-section mb-3">API keys</div>
+        <div class="settings-section mb-1">API keys</div>
+        <p class="text-muted small mb-3">
+          Saved on this machine only, in a file only your user account can read — never sent
+          anywhere but anyIP (and Anthropic for the AI generator). Only the last four characters
+          ever come back to this page.
+        </p>
 
         <div class="row mb-3 align-items-start">
           <label class="col-sm-3 col-form-label" for="anyipKeyInput">anyIP API key :</label>
@@ -539,7 +544,9 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 
       </div>
       <div class="modal-footer">
-        <span class="text-muted small me-auto text-truncate" id="settingsPath" style="max-width:55%"></span>
+        <span class="text-muted small me-auto text-truncate" id="settingsPath"
+          title="Keys are stored on this machine only, in a file only your user account can read (mode 0600)."
+          style="max-width:55%"></span>
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" id="settingsSaveBtn">
           <i class="bi bi-check-lg"></i> Save
@@ -1245,7 +1252,8 @@ function renderSettings() {
   if (!s) return;
   keyHint(document.getElementById('anyipKeyHint'), s.anyipKey, state.clearKeys.anyipKey);
   keyHint(document.getElementById('claudeKeyHint'), s.claudeKey, state.clearKeys.claudeKey);
-  document.getElementById('settingsPath').textContent = s.configPath || '';
+  document.getElementById('settingsPath').textContent =
+    (s.configPath || '') + '  · owner-only (0600)';
   setThemeInputs(s.theme);
 }
 

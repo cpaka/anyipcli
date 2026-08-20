@@ -58,6 +58,14 @@ La clé Claude est optionnelle — elle est uniquement requise pour : anyip gene
 ### Afficher la configuration enregistrée
     anyip config show          # affiche les clés masquées + chemin du fichier de config
 
+Les clés peuvent aussi être enregistrées depuis le tableau de bord : anyip serve → roue dentée → Paramètres.
+
+Stockage : config.json et sessions.json sont du JSON en clair, écrits en 0600 dans
+un répertoire 0700 (propriétaire uniquement) et remis dans cet état après chaque
+écriture. Le tableau de bord écrit dans le même fichier, n'écoute que sur 127.0.0.1,
+refuse les requêtes qui ne l'adressent pas par un nom loopback, et ne renvoie
+jamais une clé complète à la page.
+
 ### Effacer la configuration enregistrée
     anyip config clear
 

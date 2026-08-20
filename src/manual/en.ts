@@ -57,6 +57,13 @@ Claude key is optional — only required for: anyip generate, anyip man (non-Eng
 ### View stored config
     anyip config show          # shows masked keys + config file path
 
+Keys can also be saved from the dashboard: anyip serve → gear icon → Settings.
+
+Storage: config.json and sessions.json are plain JSON, written 0600 in a 0700
+directory (owner-only) and re-hardened after every write. The dashboard writes
+through the same file, listens on 127.0.0.1 only, refuses requests that did not
+address it by a loopback hostname, and never returns a full key to the page.
+
 ### Clear stored config
     anyip config clear
 

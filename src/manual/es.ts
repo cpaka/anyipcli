@@ -58,6 +58,13 @@ La clave de Claude es opcional — solo es necesaria para: anyip generate, anyip
 ### Ver configuración almacenada
     anyip config show          # muestra las claves enmascaradas + ruta del archivo de config
 
+Las claves también se pueden guardar desde el panel: anyip serve → engranaje → Ajustes.
+
+Almacenamiento: config.json y sessions.json son JSON en claro, escritos con 0600 en
+un directorio 0700 (solo el propietario) y reforzados tras cada escritura. El panel
+escribe en el mismo archivo, escucha solo en 127.0.0.1, rechaza peticiones que no lo
+direccionen por un nombre loopback y nunca devuelve una clave completa a la página.
+
 ### Borrar configuración almacenada
     anyip config clear
 

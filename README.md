@@ -112,10 +112,23 @@ All credentials and proxy session data are stored **on your machine only** — n
 
 | File | Location (macOS / Linux) | What it contains |
 |------|--------------------------|-----------------|
-| `config.json` | `~/Library/Preferences/anyip-cli-nodejs/` · `~/.config/anyip-cli-nodejs/` | API keys (encrypted by OS keychain on macOS) |
+| `config.json` | `~/Library/Preferences/anyip-cli-nodejs/` · `~/.config/anyip-cli-nodejs/` | API keys, in plain JSON |
 | `sessions.json` | same directory | Saved proxy sessions (server, port, username, password) |
 
 These files are **outside the project directory** — git never sees them, and they are never pushed to any repository. There is nothing to add to `.gitignore` for them.
+
+Neither file is encrypted, so the file mode is what protects them: both are written
+`0600` and their directory `0700` — owner-only — and the mode is re-applied after
+every write, whether it came from the CLI or the dashboard. Treat them like an
+SSH private key: anything running as your user can read them, and a backup tool
+that copies them carries your keys with it.
+
+**Saving keys from the dashboard** (`anyip serve` → gear → Settings) writes to the
+same `config.json` through the local server, so it gets the same treatment. That
+server only listens on `127.0.0.1`, only answers requests addressed to a loopback
+hostname (so a public page cannot reach it by pointing a domain at `127.0.0.1`),
+and never sends a stored key back to the page — the browser only ever sees the
+last four characters.
 
 If you ever need to inspect or wipe the stored data:
 ```bash

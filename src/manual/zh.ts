@@ -56,6 +56,12 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 ### 查看当前配置
     anyip config show          # 显示已脱敏的密钥及配置文件路径
 
+也可以在控制台中保存密钥：anyip serve → 齿轮图标 → 设置。
+
+存储方式：config.json 与 sessions.json 为明文 JSON，权限为 0600、所在目录 0700
+（仅本人可读），每次写入后都会重新设置。控制台写入同一文件，仅监听 127.0.0.1，
+拒绝非 loopback 主机名的请求，并且不会把完整密钥返回给页面。
+
 ### 清除配置
     anyip config clear
 

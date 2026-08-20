@@ -1,4 +1,6 @@
 import Conf from "conf";
+import { chmodSync } from "fs";
+import { dirname } from "path";
 
 export interface Theme {
   brand: string;       // primary — buttons, links, active tabs
@@ -47,6 +49,39 @@ export const config = new Conf<AppConfig>({
 export function getTheme(): Theme {
   return { ...DEFAULT_THEME, ...(config.get("theme") ?? {}) };
 }
+
+// ── File permissions ───────────────────────────────────────────────────────────
+// conf writes plain JSON at the process umask — 0644 on a typical machine, so
+// every local account could read the API keys. Nothing here is encrypted, so
+// the file mode is the protection: owner-only, on the directory too.
+export function hardenPermissions(file: string): void {
+  try {
+    chmodSync(dirname(file), 0o700);
+    chmodSync(file, 0o600);
+  } catch {
+    // Windows and odd filesystems ignore POSIX modes — not worth failing over.
+  }
+}
+
+hardenPermissions(config.path);
+
+// Every write recreates the file, so re-apply the mode after each one —
+// delete and clear rewrite it just as set does.
+export function hardenAfterWrites<T extends { path: string }>(store: T, methods: string[]): void {
+  for (const method of methods) {
+    const original = (store as unknown as Record<string, (...a: unknown[]) => unknown>)[method];
+    if (typeof original !== "function") continue;
+    (store as unknown as Record<string, (...a: unknown[]) => unknown>)[method] = (
+      ...args: unknown[]
+    ) => {
+      const result = original.apply(store, args);
+      hardenPermissions(store.path);
+      return result;
+    };
+  }
+}
+
+hardenAfterWrites(config, ["set", "delete", "clear", "reset"]);
 
 export function getConfigPath(): string {
   return config.path;

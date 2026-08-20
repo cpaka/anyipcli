@@ -118,6 +118,15 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
   if (method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
+  // The server listens on the loopback interface, but a page on the public
+  // internet can still point a hostname at 127.0.0.1 (DNS rebinding) and talk
+  // to it as a same-origin peer. Only requests that addressed us by loopback
+  // name are served — this endpoint stores API keys.
+  const host = (req.headers.host ?? "").replace(/:\d+$/, "").toLowerCase();
+  if (host && !["127.0.0.1", "localhost", "[::1]", "::1"].includes(host)) {
+    return json(res, 403, { error: `Refusing request for host "${req.headers.host}"` });
+  }
+
   const key = getAnyipKey();
 
   try {

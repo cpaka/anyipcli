@@ -1,4 +1,5 @@
 import Conf from "conf";
+import { hardenAfterWrites, hardenPermissions } from "./config.js";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,10 @@ export function parseConnectionString(raw: string): ProxySession {
 }
 
 // ── CRUD ───────────────────────────────────────────────────────────────────────
+
+// Sessions hold proxy passwords, so the same owner-only rule applies here.
+hardenPermissions(store.path);
+hardenAfterWrites(store, ["set", "delete", "clear", "reset"]);
 
 export function saveSession(session: ProxySession): void {
   const sessions = store.get("sessions");
