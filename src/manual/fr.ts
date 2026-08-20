@@ -133,8 +133,15 @@ Les sessions sont des configurations de connexion proxy enregistrées localement
     anyip city FR                      # toutes les villes du pays, par région
     anyip city FR --tags               # country_FR,region_iledefrance,city_paris (drapeaux)
     anyip asn FR                       # ASN des FAI/opérateurs pour la France
+    anyip near "Tour Eiffel"           # coordonnées GPS d'un lieu
+    anyip near Paris --country FR -n 3 # limiter aux résultats français
+    anyip near paris --tags            # lat_48.85341,lon_2.3488
 
 Utilisez ces commandes pour découvrir les valeurs valides pour --country, --region et le filtrage ASN.
+
+--tags (alias --flag) fonctionne sur country, region, city, asn et near : les
+drapeaux du username sont imprimés à la place de la liste, un par ligne. Le code
+pays ouvre chaque ligne car region_/city_ sont ignorés sans country_.
 
 ---
 

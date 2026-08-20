@@ -217,7 +217,23 @@ anyip country --json
 anyip region US                     # states/regions for US
 anyip region FR --json
 anyip asn US                        # ISP/carrier ASNs for US
+anyip near "Eiffel Tower"           # GPS coordinates for a place
 ```
+
+Every one of them takes **`--tags`** (alias **`--flag`**), which replaces the
+listing with the matching [username attributes](#embedding-options-in-the-username),
+one self-contained line per row — ready to paste into a proxy username:
+
+| Command | `--tags` output |
+|---------|-----------------|
+| `anyip country --tags` | `country_FR` |
+| `anyip region US --tags` | `country_US,region_texas` |
+| `anyip city US texas --tags` | `country_US,region_texas,city_dallas` |
+| `anyip asn US --tags` | `country_US,asn_21928` |
+| `anyip near paris --tags` | `lat_48.85341,lon_2.3488` |
+
+`region_`/`city_` are only honoured when `country_` is set, so the country code
+leads every line.
 
 ### Cities
 
@@ -258,10 +274,7 @@ states, 3 of 10 French regions). That is the upstream data, not a truncated
 result; a region that fails to load is reported separately rather than being
 counted as empty.
 
-**`--tags`** (alias `--flag`) emits the
-[username attribute](#embedding-options-in-the-username) form instead, one per
-line, ready to paste into a proxy username. The country is included because
-`region_`/`city_` are only honoured when `country_` is set:
+**`--tags`** (alias `--flag`) emits the username-attribute form instead:
 
 ```bash
 $ anyip city US texas --tags
@@ -279,6 +292,38 @@ alongside it to include the same string as a `tag` field:
 ```bash
 anyip city FR --json | jq -r '.[] | "\(.region)/\(.value)"'
 ```
+
+### Coordinates — `anyip near`
+
+`city`/`region` only cover what anyIP itself exposes. For anything finer, GPS
+targeting (`lat_`/`lon_`) asks for the peer closest to a point, and `anyip near`
+turns a place name into that pair:
+
+```bash
+$ anyip near "Eiffel Tower"
+
+  Place                                 Username flags
+  Eiffel Tower, Ile-de-France, France   lat_48.85826,lon_2.2945
+  Eiffel Tower, Alberta, Canada         lat_51.3336,lon_-116.235
+
+$ anyip near Paris --country US -n 3 --tags
+lat_33.66094,lon_-95.55551
+lat_36.302,lon_-88.32671
+lat_38.2098,lon_-84.25299
+```
+
+| Option | Description |
+|--------|-------------|
+| `--country <CC>` | keep only matches in that country |
+| `-n, --limit <n>` | maximum matches (default 5) |
+| `--tags` / `--flag` | print `lat_…,lon_…` only, one per line |
+| `--json` | raw geocoder records (adds `tag` with `--tags`) |
+
+Lookups go to [Open-Meteo](https://open-meteo.com/) for populated places and
+fall back to [Nominatim](https://nominatim.openstreetmap.org/) for landmarks,
+streets and venues — both key-less, the same class of third-party call
+`anyip check` already makes against ip-api.com. Coordinates are a best effort:
+anyIP returns the closest available peer, not a guaranteed location.
 
 ---
 
@@ -379,6 +424,8 @@ http://user_ACCOUNT,type_residential,country_US,session_my_sess:PASSWORD@gate.an
 | `country_XX` | ISO code | e.g. `US`, `FR`, `DE` |
 | `region_XXX` | region slug | e.g. `california` |
 | `city_XXX` | city slug | e.g. `paris` |
+| `asn_N` | ASN number | e.g. `asn_21928` — pin one ISP/carrier |
+| `lat_X,lon_Y` | decimal degrees | closest peer to a point (no `country_` needed) |
 | `session_NAME` | any string | sticky session label (omit = rotating) |
 | `sesstime_N` | minutes | session duration (e.g. `sesstime_30`) |
 

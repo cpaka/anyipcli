@@ -133,8 +133,15 @@ encuentra o crea una y la prueba con una verificación curl en vivo.
     anyip city ES                      # todas las ciudades del país, por región
     anyip city ES --tags               # country_ES,region_madrid,city_madrid (etiquetas)
     anyip asn ES                       # ASNs de ISP/operadores para España
+    anyip near "Sagrada Familia"       # coordenadas GPS de un lugar
+    anyip near Paris --country US -n 3 # solo coincidencias en EE. UU.
+    anyip near madrid --tags           # lat_40.4165,lon_-3.70256
 
 Usa estos comandos para descubrir valores válidos para --country, --region y filtrado ASN.
+
+--tags (alias --flag) funciona en country, region, city, asn y near: imprime las
+etiquetas del username en vez del listado, una por línea. El código de país
+encabeza cada línea porque region_/city_ se ignoran sin country_.
 
 ---
 

@@ -132,9 +132,16 @@ creates one and tests it with a live curl check.
     anyip city FR                      # every city in a country, by region
     anyip city US --tags               # country_US,region_texas,city_dallas (username flags)
     anyip asn US                       # ISP/carrier ASNs for US
+    anyip near "Eiffel Tower"          # GPS coordinates for a place
+    anyip near Paris --country US -n 3 # keep only US matches
+    anyip near paris --tags            # lat_48.85341,lon_2.3488
 
 Use these to discover valid values for --country, --region, --city, and ASN
 filtering.
+
+--tags (alias --flag) works on country, region, city, asn and near: it prints
+the proxy username flags instead of the listing, one per line. The country code
+leads every line because region_/city_ are ignored without country_.
 
 ---
 

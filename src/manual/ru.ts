@@ -130,8 +130,15 @@ anyIP.io предоставляет резидентные и мобильные
     anyip city US                      # все города страны, по регионам
     anyip city US --tags               # country_US,region_texas,city_dallas (теги username)
     anyip asn US                       # ASN провайдеров для США
+    anyip near "Eiffel Tower"          # GPS-координаты места
+    anyip near Paris --country US -n 3 # только совпадения в США
+    anyip near paris --tags            # lat_48.85341,lon_2.3488
 
 Используйте эти команды для получения допустимых значений --country и --region.
+
+--tags (псевдоним --flag) работает для country, region, city, asn и near: вместо
+списка печатаются теги username, по одному на строку. Код страны идёт первым,
+потому что region_/city_ игнорируются без country_.
 
 ---
 
