@@ -368,7 +368,10 @@ anyip generate "residential US proxies for scraping" --output proxies.txt
    fallback lane — with what it is best for and what it gives up
 3. **A flag breakdown table per setup** — every `type_`, `country_`, `region_`,
    `city_`, `asn_`, `pool_`, `session_`, `sesstime_`, `sessreplace_`,
-   `sessasn_` flag in that username, and why *this* use case needs it
+   `sessasn_` flag in that username, and why *this* use case needs it. Whatever
+   the table lists is what the generated usernames carry — `pool_` replaces
+   `country_`, and sticky sets get their `session_`/`sesstime_` plus any
+   `sessreplace_false` / `sessasn_strict` the plan argued for
 4. **Rotation strategy** advice for the recommended setup
 5. **Auto-creation** of the setup you pick — one **proxy profile** per planned
    proxy, attached to the accounts you already have. Targeting lives on profiles

@@ -311,6 +311,7 @@ function printSessionsTable(): void {
 
   const buildLocation = (s: ReturnType<typeof sessions.listSessions>[number]) => {
     const parts: string[] = [];
+    if (s.pool)    parts.push("pool:" + s.pool);
     if (s.country) parts.push(s.country);
     if (s.region)  parts.push(s.region);
     if (s.city)    parts.push(s.city);

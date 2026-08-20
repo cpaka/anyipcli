@@ -14,6 +14,7 @@ export interface ProxySession {
   region?: string;
   city?: string;
   asn?: string;
+  pool?: string;         // broad-area pool (pool_europe) — used instead of country
   sessTime?: number;     // minutes (sesstime_NN flag)
   rotating?: boolean;    // true = no sticky session, new IP per connection
   createdAt: string;     // ISO date string
@@ -88,6 +89,7 @@ export function parseConnectionString(raw: string): ProxySession {
     region: attrs["region"],
     city: attrs["city"],
     asn: attrs["asn"],
+    pool: attrs["pool"],
     sessTime: attrs["sesstime"] ? parseInt(attrs["sesstime"], 10) : undefined,
     rotating,
     createdAt: new Date().toISOString(),

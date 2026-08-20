@@ -77,8 +77,11 @@ export interface ProxySpec {
   region?: string;
   city?: string;
   asn?: number;
+  pool?: string;         // broad area (pool_europe) — alternative to country
   sticky?: boolean;      // sticky session vs rotating
   sessTime?: number;     // sticky duration in minutes
+  sessReplace?: boolean; // false → fail instead of silently swapping the IP
+  sessAsn?: boolean;     // true  → a replacement IP must stay on the same ASN
 }
 
 export function buildProxySpec(opts: {
@@ -132,5 +135,19 @@ export function specToProfile(
     session: spec.sticky
       ? { type: "sticky", duration: spec.sessTime ?? 10080 }
       : { type: "rotating", duration: null },
+    // sess_replace is a bool, sess_asn a string ("strict"); both are gated to
+    // Enterprise/custom plans and 422 elsewhere, so callers must be ready to
+    // retry without them.
+    ...(spec.sessReplace != null || spec.sessAsn != null
+      ? {
+          advanced_settings: {
+            ...(spec.sessReplace != null ? { sess_replace: spec.sessReplace } : {}),
+            ...(spec.sessAsn ? { sess_asn: "strict" } : {}),
+          },
+        }
+      : {}),
+    // A profile's location has no pool field, so a pooled setup can only say so
+    // in its notes — the pool_ flag on the username is what actually applies it.
+    ...(spec.pool ? { notes: `Broad-area pool: pool_${spec.pool}` } : {}),
   };
 }

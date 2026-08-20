@@ -22,6 +22,8 @@ export interface ProxyPlanItem {
   pool: string | null;
   session_prefix: string;
   sess_time: number | null;
+  sess_replace: boolean | null;  // false → sessreplace_false
+  sess_asn: boolean | null;      // true  → sessasn_strict
   rotating: boolean;
   quota_bytes: number;
   notes: string;
@@ -93,6 +95,8 @@ Rules:
 - username_example: a realistic full username for that setup, e.g. user_XXXX,type_residential,country_US,session_scrape_1
 - count per plan item: 1-10; quota_bytes realistic (1 GB = 1073741824)
 - rotating=true means no session_ flag; rotating=false means sticky (session_prefix is then required)
+- sess_replace=false emits sessreplace_false, sess_asn=true emits sessasn_strict — set them on sticky sets whose flags table argues for them, null otherwise (they are meaningless on rotating sets)
+- pool and country are alternatives: a set uses one or the other, never both
 - session_prefix: alphanumeric + underscore, max 12 chars
 - one plan item per country/region combination
 - rotation_strategy: how to drive these proxies day to day — rotation triggers, backoff, concurrency, headers. Applies to the recommended setup.
@@ -145,8 +149,8 @@ const PLAN_SCHEMA = {
               additionalProperties: false,
               required: [
                 "description", "count", "type", "country", "region", "city",
-                "asn", "pool", "session_prefix", "sess_time", "rotating",
-                "quota_bytes", "notes",
+                "asn", "pool", "session_prefix", "sess_time", "sess_replace",
+                "sess_asn", "rotating", "quota_bytes", "notes",
               ],
               properties: {
                 description: { type: "string" },
@@ -159,6 +163,8 @@ const PLAN_SCHEMA = {
                 pool: { type: ["string", "null"] },
                 session_prefix: { type: "string" },
                 sess_time: { type: ["integer", "null"] },
+                sess_replace: { type: ["boolean", "null"] },
+                sess_asn: { type: ["boolean", "null"] },
                 rotating: { type: "boolean" },
                 quota_bytes: { type: "integer" },
                 notes: { type: "string" },

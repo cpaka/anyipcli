@@ -171,7 +171,7 @@ export function printSessionsTable(sessions: ProxySession[]): void {
 
   sessions.forEach((s, i) => {
     const location = [
-      s.country,
+      s.pool ? `pool:${s.pool}` : s.country,
       s.region,
       s.city,
       s.asn && `ASN${s.asn}`,
@@ -207,6 +207,7 @@ export function printSessionCard(s: ProxySession): void {
   row("Server",          chalk.white(`${s.server}:${s.port}`));
   row("Username",        chalk.yellow(s.username));
   row("Password",        chalk.dim(s.password));
+  if (s.pool)      row("Pool",     chalk.white(s.pool));
   if (s.country)   row("Country",  chalk.white(s.country));
   if (s.region)    row("Region",   chalk.white(s.region));
   if (s.city)      row("City",     chalk.white(s.city));

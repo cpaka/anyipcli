@@ -11,6 +11,26 @@ import { getKeys } from "../config.js";
 import { ask, specToProfile } from "../utils.js";
 import type { ProxySpec } from "../utils.js";
 
+// The username is where every plan flag actually takes effect, so build it in
+// one place: the saved session, the export list and the dashboard must agree.
+export function usernameFor(item: ProxyPlanItem, accountUser: string | null | undefined, idx: number): string {
+  return [
+    `user_${accountUser}`,
+    `type_${item.type}`,
+    // pool_ replaces country_ rather than joining it.
+    item.pool ? `pool_${item.pool}` : item.country && `country_${item.country}`,
+    !item.pool && item.region && `region_${item.region}`,
+    !item.pool && item.city && `city_${item.city}`,
+    item.asn != null && `asn_${item.asn}`,
+    !item.rotating && item.session_prefix && `session_${item.session_prefix}_${idx}`,
+    !item.rotating && item.sess_time != null && `sesstime_${item.sess_time}`,
+    !item.rotating && item.sess_replace === false && "sessreplace_false",
+    !item.rotating && item.sess_asn === true && "sessasn_strict",
+  ]
+    .filter(Boolean)
+    .join(",");
+}
+
 // One setup: what it is, when to pick it, the sets it creates, and a row per
 // username flag explaining why this use case needs it.
 function printOption(option: ProxyOption, index: number): void {
@@ -208,6 +228,7 @@ export function registerGenerateCommand(program: Command): void {
       // ── Create one profile per planned proxy ───────────────────────────────────
       const entries: Entry[] = [];
       const failures: string[] = [];
+      let advancedRejected = false;
       const profileSpinner = ora(
         `Creating ${wanted.length} proxy profile${wanted.length === 1 ? "" : "s"}…`
       ).start();
@@ -223,18 +244,33 @@ export function registerGenerateCommand(program: Command): void {
           region: item.region ?? undefined,
           city: item.city ?? undefined,
           asn: item.asn ?? undefined,
+          pool: item.pool ?? undefined,
           sticky: !item.rotating,
           sessTime: item.sess_time ?? undefined,
+          sessReplace: item.rotating ? undefined : item.sess_replace ?? undefined,
+          sessAsn: item.rotating ? undefined : item.sess_asn ?? undefined,
         };
         // Name it the way the plan reads, so the dashboard's profile list is
         // legible; the API only asks for at least 3 characters.
-        const name = `${item.description} #${idx}`.slice(0, 60).padEnd(3, "_");
+        const name = (item.count > 1 ? `${item.description} #${idx}` : item.description)
+          .slice(0, 60)
+          .padEnd(3, "_");
 
         try {
-          const profile = await api.createProfile(
-            anyipKey,
-            specToProfile(spec, name, account.id)
-          );
+          let profile: api.ProxyProfile;
+          try {
+            profile = await api.createProfile(anyipKey, specToProfile(spec, name, account.id));
+          } catch (e) {
+            // sessreplace_/sessasn_ are Enterprise-plan settings on a profile.
+            // The plan can still ask for them as username flags, so drop them
+            // from the profile rather than losing the whole setup.
+            if (!/only available on Enterprise/i.test(String(e))) throw e;
+            advancedRejected = true;
+            profile = await api.createProfile(
+              anyipKey,
+              specToProfile({ ...spec, sessReplace: undefined, sessAsn: undefined }, name, account.id)
+            );
+          }
           entries.push({ item, idx, account, profile });
         } catch (e) {
           // A profile that fails still has working username flags, so keep the
@@ -256,6 +292,11 @@ export function registerGenerateCommand(program: Command): void {
         );
         failures.slice(0, 3).forEach((f) => console.log(chalk.dim(`     ${f}`)));
       }
+      if (advancedRejected) {
+        display.info(
+          "sessreplace_/sessasn_ are Enterprise-plan profile settings — stored in the username flags only."
+        );
+      }
 
       // ── Save sessions locally ──────────────────────────────────────────────────
       for (const { item, idx, account } of entries) {
@@ -265,18 +306,7 @@ export function registerGenerateCommand(program: Command): void {
           ? `gen_rotating_${Math.random().toString(16).slice(2, 8)}`
           : `${item.session_prefix}_${idx}`;
 
-        const compositeUsername = [
-          `user_${account.username}`,
-          `type_${item.type}`,
-          item.country && `country_${item.country}`,
-          item.region  && `region_${item.region}`,
-          item.city    && `city_${item.city}`,
-          item.asn != null && `asn_${item.asn}`,
-          !item.rotating && item.session_prefix && `session_${item.session_prefix}_${idx}`,
-          item.sess_time != null && `sesstime_${item.sess_time}`,
-        ]
-          .filter(Boolean)
-          .join(",");
+        const compositeUsername = usernameFor(item, account.username, idx);
 
         sessions.saveSession({
           name: sessionName,
@@ -290,6 +320,7 @@ export function registerGenerateCommand(program: Command): void {
           region: item.region ?? undefined,
           city: item.city ?? undefined,
           asn: item.asn != null ? String(item.asn) : undefined,
+          pool: item.pool ?? undefined,
           sessTime: item.sess_time ?? undefined,
           rotating: item.rotating,
           createdAt: new Date().toISOString(),
@@ -315,16 +346,7 @@ export function registerGenerateCommand(program: Command): void {
           const { account } = entry;
           // The username carries the targeting, so print the composite form —
           // a bare user_XXXX would connect worldwide and ignore the plan.
-          const flags = [
-            `user_${account.username}`,
-            `type_${item.type}`,
-            item.country && `country_${item.country}`,
-            item.region  && `region_${item.region}`,
-            item.city    && `city_${item.city}`,
-            item.asn != null && `asn_${item.asn}`,
-            !item.rotating && item.session_prefix && `session_${item.session_prefix}_${entry.idx}`,
-            item.sess_time != null && `sesstime_${item.sess_time}`,
-          ].filter(Boolean).join(",");
+          const flags = usernameFor(item, account.username, entry.idx);
 
           if (account.username && account.password) {
             lines.push(`http://${flags}:${account.password}@gate.anyip.io:8080`);
