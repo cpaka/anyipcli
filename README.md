@@ -174,6 +174,26 @@ anyip get --user 2                          # use proxy account #2
 anyip get --list                            # show matches without running curl
 ```
 
+`anyip proxy list` shows the same columns as the dashboard's Proxies tab —
+account, network, session type, session name, connection, location, age — with
+the full proxy string (and last tested IP) on its own line, plus the same
+filters and format picker:
+
+```bash
+anyip proxy list                          # account · network · type · session · conn · location
+anyip proxy list --network mobile         # residential | mobile
+anyip proxy list --session sticky         # sticky | rotating
+anyip proxy list --search paris           # name, country, region, city, pool, ASN or tag
+anyip proxy list --format http            # hostuser | userhost | http | https | socks5
+anyip proxy list --json                   # each session plus its `proxy` string
+```
+
+```
+  #   ACCOUNT      NETWORK  TYPE    SESSION   CONN    LOCATION                            CREATED
+  1   user_3c035b  Mobile   Sticky  dced3cd8  SOCKS5  FR · iledefrance · paris · ASN3215  131d ago
+      portal.anyip.io:1080:user_3c035b,type_mobile,country_FR,…,session_dced3cd8:4fc556   last IP 92.184.97.72
+```
+
 ```bash
 # Manage saved sessions
 anyip proxy list                    # all saved sessions

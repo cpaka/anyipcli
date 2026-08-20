@@ -94,7 +94,11 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
     anyip get --list                             # 仅列出匹配会话，不执行 curl
 
 ### 管理已保存的会话
-    anyip proxy list                  # 列出所有已保存的会话
+    anyip proxy list                  # 账户、网络、类型、会话、连接方式、位置
+    anyip proxy list --network mobile # residential | mobile
+    anyip proxy list --session sticky # sticky | rotating
+    anyip proxy list --search paris   # 名称、国家、省/州、城市、pool、ASN 或标签
+    anyip proxy list --format http    # hostuser | userhost | http | https | socks5
     anyip proxy list --user 1         # 筛选属于账户 #1 的会话
     anyip proxy get <名称>            # 查看某个会话的详细信息
     anyip proxy curl <名称>           # 打印 curl 测试命令

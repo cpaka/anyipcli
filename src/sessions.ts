@@ -141,3 +141,17 @@ export function buildCurlCommand(s: ProxySession): string {
 export function buildProxyUrl(s: ProxySession, scheme = "http"): string {
   return `${scheme}://${s.username}:${s.password}@${s.server}:${s.port}`;
 }
+
+// The formats the dashboard's Proxies tab offers, so `anyip proxy list
+// --format` and the picker there produce identical strings.
+export type ProxyFormat = "hostuser" | "userhost" | "http" | "https" | "socks5";
+
+export function buildProxyString(s: ProxySession, format: ProxyFormat = "hostuser"): string {
+  switch (format) {
+    case "userhost": return `${s.username}:${s.password}@${s.server}:${s.port}`;
+    case "http":     return buildProxyUrl(s, "http");
+    case "https":    return buildProxyUrl(s, "https");
+    case "socks5":   return buildProxyUrl(s, "socks5");
+    default:         return `${s.server}:${s.port}:${s.username}:${s.password}`;
+  }
+}

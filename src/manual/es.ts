@@ -96,7 +96,11 @@ encuentra o crea una y la prueba con una verificación curl en vivo.
     anyip get --list                             # mostrar sesiones coincidentes sin hacer curl
 
 ### Gestionar sesiones guardadas
-    anyip proxy list                  # todas las sesiones guardadas
+    anyip proxy list                  # cuenta, red, tipo, sesión, conn, ubicación
+    anyip proxy list --network mobile # residential | mobile
+    anyip proxy list --session sticky # sticky | rotating
+    anyip proxy list --search paris   # nombre, país, región, ciudad, pool, ASN o tag
+    anyip proxy list --format http    # hostuser | userhost | http | https | socks5
     anyip proxy list --user 1         # sesiones pertenecientes a la cuenta proxy n.º 1
     anyip proxy get <nombre>          # tarjeta de detalle completo de una sesión
     anyip proxy curl <nombre>         # imprimir el comando curl de prueba

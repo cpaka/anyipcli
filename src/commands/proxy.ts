@@ -217,7 +217,23 @@ export function registerProxyCommands(program: Command): void {
     .alias("ls")
     .description("List all saved proxy sessions")
     .option("-u, --user <query>", "Filter by user index (1, 2…) or username substring")
-    .action(async (opts: { user?: string }) => {
+    .option("-q, --search <text>", "Filter by session name, country, city, region or tag")
+    .option("--network <type>", "Only residential or mobile")
+    .option("--session <type>", "Only sticky or rotating")
+    .option(
+      "--format <fmt>",
+      "Proxy string format: hostuser | userhost | http | https | socks5",
+      "hostuser"
+    )
+    .option("--json", "Output raw JSON")
+    .action(async (opts: {
+      user?: string;
+      search?: string;
+      network?: string;
+      session?: string;
+      format?: string;
+      json?: boolean;
+    }) => {
       let all = sessions.listSessions();
       let userLabel = opts.user;
 
@@ -244,15 +260,58 @@ export function registerProxyCommands(program: Command): void {
         }
       }
 
-      const title = opts.user
-        ? `Proxies — user:${userLabel} (${all.length})`
-        : `Saved Proxies (${all.length})`;
-      display.printHeader(title);
+      // Same filters as the dashboard's Proxies tab.
+      if (opts.network) {
+        const want = opts.network.toLowerCase();
+        all = all.filter((s) => s.networkType?.toLowerCase() === want);
+      }
+      if (opts.session) {
+        const want = opts.session.toLowerCase();
+        if (want === "sticky") all = all.filter((s) => !s.rotating);
+        if (want === "rotating") all = all.filter((s) => s.rotating);
+      }
+      if (opts.search) {
+        const q = opts.search.toLowerCase();
+        all = all.filter((s) =>
+          [s.name, s.country, s.region, s.city, s.pool, s.asn, s.userTag, s.networkType, s.connectionType]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(q))
+        );
+      }
+
+      const format = (opts.format ?? "hostuser") as sessions.ProxyFormat;
+      const FORMATS = ["hostuser", "userhost", "http", "https", "socks5"];
+      if (!FORMATS.includes(format)) {
+        display.error(`--format must be one of ${FORMATS.join(", ")}`);
+        process.exit(1);
+      }
+
+      if (opts.json) {
+        console.log(
+          JSON.stringify(
+            all.map((s) => ({ ...s, proxy: sessions.buildProxyString(s, format) })),
+            null,
+            2
+          )
+        );
+        return;
+      }
+
+      const filters = [
+        opts.user && `user:${userLabel}`,
+        opts.network && `network:${opts.network}`,
+        opts.session && `session:${opts.session}`,
+        opts.search && `search:"${opts.search}"`,
+      ].filter(Boolean).join(", ");
+
+      display.printHeader(
+        `Saved Proxies (${all.length})${filters ? ` — ${filters}` : ""}`
+      );
       if (all.length === 0) {
         display.info("No sessions found. Use: anyip get");
         return;
       }
-      display.printSessionsTable(all);
+      display.printSessionsTable(all, format);
       console.log();
     });
 

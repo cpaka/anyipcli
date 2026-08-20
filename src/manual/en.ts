@@ -95,7 +95,11 @@ creates one and tests it with a live curl check.
     anyip get --list                             # show matching sessions without curling
 
 ### Manage saved sessions
-    anyip proxy list                  # all saved sessions
+    anyip proxy list                  # account, network, type, session, conn, location
+    anyip proxy list --network mobile # residential | mobile
+    anyip proxy list --session sticky # sticky | rotating
+    anyip proxy list --search paris   # name, country, region, city, pool, ASN or tag
+    anyip proxy list --format http    # hostuser | userhost | http | https | socks5
     anyip proxy list --user 1         # sessions belonging to proxy account #1
     anyip proxy get <name>            # full detail card for a session
     anyip proxy curl <name>           # print the curl test command

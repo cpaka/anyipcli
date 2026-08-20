@@ -2,7 +2,8 @@ import chalk from "chalk";
 import Table from "cli-table3";
 import type { ProxyAccount, User, TrafficPoint, Usage, Subscription, City, Region } from "./api.js";
 import type { ProxySession } from "./sessions.js";
-import { buildCurlCommand, buildProxyUrl, resolveUserTag } from "./sessions.js";
+import { buildCurlCommand, buildProxyString, buildProxyUrl, resolveUserTag } from "./sessions.js";
+import type { ProxyFormat } from "./sessions.js";
 
 // ── Bytes formatter ────────────────────────────────────────────────────────────
 export function fmtBytes(bytes?: number): string {
@@ -12,6 +13,16 @@ export function fmtBytes(bytes?: number): string {
   let val = bytes;
   while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
   return `${val.toFixed(2)} ${units[i]}`;
+}
+
+// ── Relative time ──────────────────────────────────────────────────────────────
+export function timeAgo(iso?: string): string {
+  if (!iso) return "—";
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return "just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  return `${Math.floor(sec / 86400)}d ago`;
 }
 
 // ── Status badge ───────────────────────────────────────────────────────────────
@@ -153,42 +164,80 @@ export function printTrafficTable(items: TrafficPoint[]): void {
 }
 
 // ── Sessions table ─────────────────────────────────────────────────────────────
-export function printSessionsTable(sessions: ProxySession[]): void {
-  const table = new Table({
-    head: [
-      chalk.cyan("#"),
-      chalk.cyan("User"),
-      chalk.cyan("Session Name"),
-      chalk.cyan("Type"),
-      chalk.cyan("Location"),
-      chalk.cyan("Last IP"),
-      chalk.cyan("Saved"),
-    ],
-    style: { head: [], border: ["gray"] },
-    colWidths: [4, 14, 24, 12, 28, 18, 12],
-    wordWrap: true,
-  });
+// ── Saved proxies ──────────────────────────────────────────────────────────────
+// Mirrors the dashboard's Proxies tab: network, session type, session name,
+// connection, location, then the proxy string itself on its own line — it is
+// 100+ characters and would be unreadable squeezed into a column.
+export function printSessionsTable(
+  sessions: ProxySession[],
+  format: ProxyFormat = "hostuser"
+): void {
+  const rows = sessions.map((s, i) => ({
+    n: String(i + 1),
+    network: s.networkType === "mobile" ? "Mobile" : "Residential",
+    user: `user_${resolveUserTag(s)}`,
+    kind: s.rotating ? "Rotating" : "Sticky",
+    session: s.rotating ? "per request" : s.name,
+    conn: (s.connectionType || "http").toUpperCase(),
+    location:
+      [
+        s.pool ? `pool:${s.pool}` : s.country,
+        s.region,
+        s.city,
+        s.asn && `ASN${s.asn}`,
+      ].filter(Boolean).join(" · ") || "Worldwide",
+    created: timeAgo(s.createdAt),
+    lastIp: s.lastIp ?? "",
+    proxy: buildProxyString(s, format),
+  }));
 
-  sessions.forEach((s, i) => {
-    const location = [
-      s.pool ? `pool:${s.pool}` : s.country,
-      s.region,
-      s.city,
-      s.asn && `ASN${s.asn}`,
-    ].filter(Boolean).join(", ") || "—";
+  const w = (key: keyof (typeof rows)[number], head: string) =>
+    Math.max(head.length, ...rows.map((r) => r[key].length)) + 2;
+  const cols = {
+    n: w("n", "#"),
+    user: w("user", "ACCOUNT"),
+    network: w("network", "NETWORK"),
+    kind: w("kind", "TYPE"),
+    session: w("session", "SESSION"),
+    conn: w("conn", "CONN"),
+    location: w("location", "LOCATION"),
+  };
 
-    table.push([
-      chalk.dim(String(i + 1)),
-      chalk.yellow(`user_${resolveUserTag(s)}`),
-      chalk.white(s.name),
-      s.rotating ? chalk.magenta("rotating") : chalk.cyan(s.networkType),
-      chalk.dim(location),
-      s.lastIp ? chalk.green(s.lastIp) : chalk.dim("—"),
-      chalk.dim(s.createdAt.slice(0, 10)),
-    ]);
-  });
+  console.log(
+    "  " +
+      chalk.cyan(
+        "#".padEnd(cols.n) +
+          "ACCOUNT".padEnd(cols.user) +
+          "NETWORK".padEnd(cols.network) +
+          "TYPE".padEnd(cols.kind) +
+          "SESSION".padEnd(cols.session) +
+          "CONN".padEnd(cols.conn) +
+          "LOCATION".padEnd(cols.location) +
+          "CREATED"
+      )
+  );
 
-  console.log(table.toString());
+  for (const r of rows) {
+    console.log(
+      "  " +
+        chalk.dim(r.n.padEnd(cols.n)) +
+        chalk.yellow(r.user.padEnd(cols.user)) +
+        chalk.white(r.network.padEnd(cols.network)) +
+        (r.kind === "Rotating"
+          ? chalk.magenta(r.kind.padEnd(cols.kind))
+          : chalk.cyan(r.kind.padEnd(cols.kind))) +
+        chalk.white(r.session.padEnd(cols.session)) +
+        chalk.dim(r.conn.padEnd(cols.conn)) +
+        chalk.white(r.location.padEnd(cols.location)) +
+        chalk.dim(r.created)
+    );
+    console.log(
+      "  " +
+        " ".repeat(cols.n) +
+        chalk.dim(r.proxy) +
+        (r.lastIp ? chalk.green(`   last IP ${r.lastIp}`) : "")
+    );
+  }
 }
 
 // ── Session detail card ────────────────────────────────────────────────────────
