@@ -487,7 +487,9 @@ anyip dashboard           # same command — aliases: dashboard, dash, gui
 ```
 
 Press `Ctrl+C` to stop. It listens on `127.0.0.1` only and refuses requests that
-did not address it by a loopback hostname.
+did not address it by a loopback hostname. Bootstrap, its icon font and the anyIP
+mark are vendored under `assets/` and served by the same process, so the dashboard
+works with no internet connection and phones home to nobody.
 
 ![anyIP Proxy Manager — Proxies tab](docs/images/dashboard-proxies.png)
 
@@ -538,7 +540,7 @@ whole selection:
 The selection survives filtering, searching and format changes, so you can narrow
 to `--network mobile`, tick them, widen again, and still act on the same set.
 
-**+ New Proxy** opens the creation form: network type, session type and name,
+**⚙ Settings** and **+ New Proxy** sit in the navbar. **+ New Proxy** opens the creation form: network type, session type and name,
 connection (HTTP / HTTPS / SOCKS5), country, password, quantity and label.
 
 ### Settings (⚙)
@@ -661,6 +663,8 @@ ANYIP_API_KEY=$SECRET anyip traffic list --json > metrics.json
 
 ```
 proxy-manager.html        # Web dashboard UI (served by `anyip serve`)
+assets/                   # Vendored Bootstrap, icon font and anyIP mark — no CDN
+docs/images/              # Dashboard screenshots used by this README
 src/
 ├── index.ts              # CLI entry — wires all commands together
 ├── api.ts                # anyIP.io REST API client

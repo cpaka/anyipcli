@@ -1,7 +1,7 @@
 import http from "node:http";
 import { URL } from "node:url";
 import { exec } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
 import { config, getTheme, DEFAULT_THEME, type Theme } from "./config.js";
@@ -131,6 +131,31 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   const key = getAnyipKey();
 
   try {
+    // Vendored Bootstrap, its icon font and the anyIP mark — the dashboard has
+    // to work with no internet, so nothing is pulled from a CDN.
+    if (path.startsWith("/assets/") && method === "GET") {
+      const rel = path.slice("/assets/".length);
+      // No traversal: only the flat asset dir and its fonts subdirectory.
+      if (!/^(fonts\/)?[\w.-]+$/.test(rel)) return json(res, 404, { error: "Not found" });
+      const file = join(_htmlDir, "..", "assets", rel);
+      if (!existsSync(file)) return json(res, 404, { error: "Not found" });
+
+      const types: Record<string, string> = {
+        css: "text/css; charset=utf-8",
+        js: "text/javascript; charset=utf-8",
+        png: "image/png",
+        woff: "font/woff",
+        woff2: "font/woff2",
+      };
+      const ext = rel.split(".").pop() ?? "";
+      res.writeHead(200, {
+        "Content-Type": types[ext] ?? "application/octet-stream",
+        "Cache-Control": "max-age=86400",
+      });
+      res.end(readFileSync(file));
+      return;
+    }
+
     if (path === "/" && method === "GET") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(buildHtml());

@@ -227,7 +227,8 @@ that did not address it by a loopback hostname. The dashboard includes:
 - Passwords shown as ***** until you press Show passwords (Copy/Export use the real one)
 - Country flag per row, 🌐 Global when no country is pinned
 - Change IP button on every sticky row (rotation link)
-- Settings (gear, next to + New Proxy): API keys and dashboard colours
+- Settings button next to + New Proxy: API keys and dashboard colours
+- No internet needed: Bootstrap, the icon font and the anyIP mark are served locally
 
 ---
 
