@@ -207,7 +207,7 @@ The generator also saves all created sessions locally so you can immediately use
 
 Launch a local browser GUI to manage proxies visually:
 
-    anyip serve               # opens http://127.0.0.1:3000 in your browser
+    anyip serve               # opens http://127.0.0.1:4747 in your browser
     anyip serve --port 8080   # custom port
     anyip dashboard           # same command — aliases: dashboard, dash, gui
 

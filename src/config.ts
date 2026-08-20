@@ -89,7 +89,7 @@ export function getConfigPath(): string {
 
 // Env vars take priority over stored config
 export function getAnyipKey(): string {
-  const key = process.env.ANYIP_API_KEY ?? config.get("anyipKey");
+  const key = process.env.ANYIP_API_KEY || config.get("anyipKey");
   if (!key) {
     console.error(
       "❌  anyIP key not set.\n" +
@@ -105,7 +105,7 @@ export function getAnyipKey(): string {
 
 // Claude key is optional at config level — only commands that use AI call this
 export function getClaudeKey(): string {
-  const key = process.env.ANTHROPIC_API_KEY ?? config.get("claudeKey");
+  const key = process.env.ANTHROPIC_API_KEY || config.get("claudeKey");
   if (!key) {
     console.error(
       "❌  Claude (Anthropic) key not set.\n" +

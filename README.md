@@ -78,25 +78,53 @@ anyip generate "scrape Amazon prices across 5 US cities, rotating IPs"
 Both keys come from a web dashboard — see
 [Where to get the keys](#-where-to-get-the-keys) above for the exact pages.
 
-### Option A — Interactive prompt *(safest — keys stay out of shell history)*
+### Option A — Dashboard *(GUI — no terminal typing)*
+
+```bash
+anyip serve      # or: anyip dashboard / dash / gui
+```
+
+The dashboard opens at `http://127.0.0.1:4747`. Click the ⚙ gear beside
+**+ New Proxy**, paste each key into the **API keys** section, and press **Save**.
+
+| In the modal | What it does |
+|--------------|--------------|
+| Blank field | Keeps the key already stored — the placeholder shows its last 4 characters |
+| 👁 button | Reveals what you are typing, for checking a paste |
+| 🗑 button | Marks that key to be **forgotten** on the next Save |
+| *Set via environment variable* note | That key comes from `ANYIP_API_KEY` / `ANTHROPIC_API_KEY` and wins over anything saved here — unset the variable if you want the stored key used |
+
+Save applies immediately — no restart. The server reads the stored key on every
+request, and the page reloads your account details as soon as the key changes.
+
+**You do not need a key to open the dashboard**, which makes this the easiest way
+to set up a fresh machine: run `anyip serve`, save both keys in the modal, carry
+on. Until a key is stored the account bar shows a warning and the Account/Stats
+tabs stay empty; the Proxies tab still lists whatever sessions are saved locally.
+
+Only the last four characters of a stored key are ever sent back to the page, and
+the file is written owner-only — see [Local Data & Privacy](#-local-data--privacy).
+
+### Option B — Interactive prompt *(safest in a terminal — keys stay out of shell history)*
 ```bash
 anyip config set-keys
 #  anyIP API key      : ************
 #  Claude API key     : ************
 ```
 
-### Option B — Flags
+### Option C — Flags
 ```bash
 anyip config set-keys --anyip YOUR_ANYIP_KEY --claude YOUR_CLAUDE_KEY
 ```
 
-### Option C — Environment variables *(perfect for CI/CD)*
+### Option D — Environment variables *(perfect for CI/CD)*
 ```bash
 export ANYIP_API_KEY=your_anyip_key
 export ANTHROPIC_API_KEY=your_claude_key  # optional — only needed for AI commands
 ```
 
-> 🟡 **Environment variables always take priority** over stored config.
+> 🟡 **Environment variables always take priority** over stored config (an
+> exported-but-empty variable counts as unset and falls through to the stored key).
 > 🟢 **Claude key is optional** — only `anyip generate` and `anyip man` (non-English) use it.
 
 ```bash
@@ -449,7 +477,7 @@ to your own Anthropic key.
 Prefer a GUI? Launch a local browser interface:
 
 ```bash
-anyip serve               # opens http://127.0.0.1:3000
+anyip serve               # opens http://127.0.0.1:4747
 anyip serve --port 8080   # custom port
 anyip dashboard           # same command — aliases: dashboard, dash, gui
 ```

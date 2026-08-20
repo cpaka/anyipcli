@@ -201,7 +201,7 @@ usar inmediatamente \`anyip get\` o \`anyip proxy list\`.
 
 Lanza una interfaz gráfica local en tu navegador para gestionar proxies visualmente:
 
-    anyip serve               # abre http://127.0.0.1:3000 en tu navegador
+    anyip serve               # abre http://127.0.0.1:4747 en tu navegador
     anyip dashboard           # misma orden — alias: dashboard, dash, gui
     anyip serve --port 8080   # puerto personalizado
 

@@ -193,7 +193,7 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 
 在浏览器中可视化管理代理：
 
-    anyip serve               # 打开 http://127.0.0.1:3000
+    anyip serve               # 打开 http://127.0.0.1:4747
     anyip dashboard           # 同一命令 — 别名：dashboard、dash、gui
     anyip serve --port 8080   # 自定义端口
 

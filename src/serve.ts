@@ -15,7 +15,8 @@ import { RU_MANUAL } from "./manual/ru.js";
 import chalk from "chalk";
 
 function getAnyipKey(): string {
-  return process.env.ANYIP_API_KEY ?? (config.get("anyipKey") as string) ?? "";
+  // An exported-but-empty env var is not a key — fall through to the stored one.
+  return process.env.ANYIP_API_KEY || (config.get("anyipKey") as string) || "";
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
@@ -29,7 +30,7 @@ interface KeyState {
 }
 
 function keyState(envVar: string, stored?: string): KeyState {
-  const fromEnv = process.env[envVar];
+  const fromEnv = process.env[envVar] || undefined;
   const key = fromEnv ?? stored ?? "";
   return {
     set: !!key,
