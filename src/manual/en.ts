@@ -185,6 +185,8 @@ Press Ctrl+C to stop the server. The dashboard includes:
 - AI proxy generator form
 - Traffic overview
 - Session viewer
+- Change IP button on every sticky row (rotation link)
+- Settings (gear, next to + New Proxy): API keys and dashboard colours
 
 ---
 

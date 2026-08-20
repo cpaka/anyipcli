@@ -1,11 +1,25 @@
 import Conf from "conf";
 
+export interface Theme {
+  brand: string;       // primary — buttons, links, active tabs
+  brandLight: string;  // tinted backgrounds (badges, code blocks)
+  brandDark: string;   // hover/pressed states
+}
+
+// The palette the dashboard ships with; anything unset falls back to these.
+export const DEFAULT_THEME: Theme = {
+  brand: "#5C0FBA",
+  brandLight: "#f3ecfb",
+  brandDark: "#430b87",
+};
+
 interface AppConfig {
   anyipKey?: string;
   claudeKey?: string;
   userToken?: string;
   teamId?: string;
   teamIdForKey?: string;
+  theme?: Partial<Theme>;
 }
 
 export const config = new Conf<AppConfig>({
@@ -17,8 +31,22 @@ export const config = new Conf<AppConfig>({
     // v1 API team scope, cached per API key (see api.getTeamId)
     teamId: { type: "string" },
     teamIdForKey: { type: "string" },
+    // Dashboard palette (anyip serve → Settings → Appearance)
+    theme: {
+      type: "object",
+      properties: {
+        brand: { type: "string" },
+        brandLight: { type: "string" },
+        brandDark: { type: "string" },
+      },
+      additionalProperties: false,
+    },
   },
 });
+
+export function getTheme(): Theme {
+  return { ...DEFAULT_THEME, ...(config.get("theme") ?? {}) };
+}
 
 export function getConfigPath(): string {
   return config.path;

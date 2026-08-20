@@ -185,6 +185,8 @@ Presiona Ctrl+C para detener el servidor. El panel incluye:
 - Formulario del generador de proxy con IA
 - Resumen de tráfico
 - Visor de sesiones
+- Botón de cambio de IP en cada sesión sticky (enlace de rotación)
+- Ajustes (engranaje, junto a + New Proxy): claves API y colores
 
 ---
 

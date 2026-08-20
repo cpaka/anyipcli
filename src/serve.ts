@@ -4,7 +4,7 @@ import { exec } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
-import { config } from "./config.js";
+import { config, getTheme, DEFAULT_THEME, type Theme } from "./config.js";
 import * as api from "./api.js";
 import * as sessions from "./sessions.js";
 import { EN_MANUAL } from "./manual/en.js";
@@ -16,6 +16,70 @@ import chalk from "chalk";
 
 function getAnyipKey(): string {
   return process.env.ANYIP_API_KEY ?? (config.get("anyipKey") as string) ?? "";
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+// Keys never leave the process in full: the dashboard only ever shows the last
+// four characters, which is enough to tell two keys apart.
+
+interface KeyState {
+  set: boolean;
+  masked: string;
+  source: "env" | "config" | null;
+}
+
+function keyState(envVar: string, stored?: string): KeyState {
+  const fromEnv = process.env[envVar];
+  const key = fromEnv ?? stored ?? "";
+  return {
+    set: !!key,
+    masked: key ? "••••••••" + key.slice(-4) : "",
+    source: fromEnv ? "env" : stored ? "config" : null,
+  };
+}
+
+function settingsPayload() {
+  return {
+    anyipKey: keyState("ANYIP_API_KEY", config.get("anyipKey")),
+    claudeKey: keyState("ANTHROPIC_API_KEY", config.get("claudeKey")),
+    theme: getTheme(),
+    defaultTheme: DEFAULT_THEME,
+    configPath: config.path,
+  };
+}
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+// An empty string is an explicit "forget this key"; undefined leaves it alone.
+function applyKey(field: "anyipKey" | "claudeKey", value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const key = value.trim();
+  if (key === "") {
+    config.delete(field);
+    return true;
+  }
+  config.set(field, key);
+  return true;
+}
+
+function applyTheme(value: unknown): void {
+  if (!value || typeof value !== "object") return;
+  const incoming = value as Partial<Theme>;
+  const next: Partial<Theme> = {};
+  for (const field of ["brand", "brandLight", "brandDark"] as const) {
+    const color = incoming[field];
+    if (typeof color !== "string") continue;
+    if (!HEX.test(color)) throw new Error(`Invalid colour for ${field}: ${color}`);
+    next[field] = color.toLowerCase();
+  }
+  if (Object.keys(next).length === 0) return;
+  // A palette matching the shipped one is stored as "no override", so a later
+  // change to the default follows through.
+  const merged = { ...getTheme(), ...next };
+  const isDefault = (Object.keys(DEFAULT_THEME) as Array<keyof Theme>)
+    .every((k) => merged[k].toLowerCase() === DEFAULT_THEME[k].toLowerCase());
+  if (isDefault) config.delete("theme");
+  else config.set("theme", merged);
 }
 
 async function readBody(req: http.IncomingMessage): Promise<unknown> {
@@ -53,6 +117,25 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(buildHtml());
       return;
+    }
+
+    if (path === "/api/settings" && method === "GET") {
+      return json(res, 200, settingsPayload());
+    }
+
+    if (path === "/api/settings" && method === "PUT") {
+      const body = (await readBody(req)) as Record<string, unknown>;
+      try {
+        applyTheme(body.theme);
+      } catch (e) {
+        return json(res, 400, { error: String(e instanceof Error ? e.message : e) });
+      }
+      const before = config.get("anyipKey");
+      applyKey("anyipKey", body.anyipKey);
+      applyKey("claudeKey", body.claudeKey);
+      // The team id is cached per key — a new key must resolve its own team.
+      if (config.get("anyipKey") !== before) api.resetTeamCache();
+      return json(res, 200, settingsPayload());
     }
 
     if (path === "/api/me" && method === "GET") {
@@ -139,6 +222,29 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         en: EN_MANUAL, fr: FR_MANUAL, es: ES_MANUAL, zh: ZH_MANUAL, ru: RU_MANUAL,
       };
       return json(res, 200, { content: manuals[lang] ?? EN_MANUAL });
+    }
+
+    // Rotate ("change IP") a sticky session — the link is per proxy account and
+    // only takes effect for a username carrying the same session_ flag.
+    const rotateMatch = path.match(/^\/api\/sessions\/([^/]+)\/rotate$/);
+    if (rotateMatch && method === "POST") {
+      const name = decodeURIComponent(rotateMatch[1]);
+      const session = sessions.getSession(name);
+      if (!session) return json(res, 404, { error: `No saved proxy named "${name}"` });
+      if (session.rotating) {
+        return json(res, 400, {
+          error: "This proxy already rotates on every connection — there is no sticky IP to change.",
+        });
+      }
+      const username = sessions.resolveUserTag(session);
+      const hash = (await api.getRotationHashes(key))[username];
+      if (!hash) {
+        return json(res, 404, {
+          error: `No rotation link for account user_${username} — it may have been deleted.`,
+        });
+      }
+      const result = await api.rotateSession(hash, session.name);
+      return json(res, 200, result);
     }
 
     const sessionMatch = path.match(/^\/api\/sessions\/([^/]+)$/);
@@ -303,5 +409,15 @@ const _htmlDir = dirname(fileURLToPath(import.meta.url));
 function buildHtml(): string {
   // Resolve proxy-manager.html relative to this file (works in both src/ and dist/)
   const htmlPath = join(_htmlDir, "..", "proxy-manager.html");
-  return readFileSync(htmlPath, "utf-8");
+  const html = readFileSync(htmlPath, "utf-8");
+
+  // Inline the stored palette so a customised dashboard paints correctly on the
+  // first frame instead of flashing purple until /api/settings comes back.
+  const theme = getTheme();
+  const rgb = [1, 3, 5].map((i) => parseInt(theme.brand.slice(i, i + 2), 16)).join(",");
+  const vars =
+    `<style id="themeVars">:root{` +
+    `--brand:${theme.brand};--brand-light:${theme.brandLight};--brand-dark:${theme.brandDark};` +
+    `--bs-primary:${theme.brand};--bs-primary-rgb:${rgb};}</style>`;
+  return html.replace("</head>", vars + "\n</head>");
 }

@@ -185,6 +185,8 @@ Appuyez sur Ctrl+C pour arrêter le serveur. Le tableau de bord comprend :
 - Formulaire de générateur de proxy IA
 - Aperçu du trafic
 - Visionneuse de sessions
+- Bouton « changer d'IP » sur chaque session sticky (lien de rotation)
+- Paramètres (roue dentée, à côté de + New Proxy) : clés API et couleurs
 
 ---
 

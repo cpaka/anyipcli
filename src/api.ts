@@ -202,6 +202,14 @@ async function request<T>(
 
 let teamIdMemo: string | undefined;
 
+// Call after the stored API key changes — the memo and the on-disk cache are
+// both keyed to the old key and would otherwise scope requests to its team.
+export function resetTeamCache(): void {
+  teamIdMemo = undefined;
+  config.delete("teamId");
+  config.delete("teamIdForKey");
+}
+
 export async function getTeamId(apiKey: string): Promise<string> {
   if (teamIdMemo) return teamIdMemo;
 
@@ -273,6 +281,67 @@ export async function getAsn(apiKey: string, country: string): Promise<AsnEntry[
 }
 
 // ── ProxyAccount ───────────────────────────────────────────────────────────────
+
+// ── Rotation ("change IP") links ──────────────────────────────────────────────
+// The rotation link is only exposed on the legacy account payload — the v1
+// proxy_accounts resource carries no hash — so the map is built from there:
+//   GET /api/invalidate/{personal_hash}/{session_name}
+// It needs no api-key of its own (the hash is the secret) and only works for a
+// username carrying a matching session_ flag.
+
+interface LegacyAccount {
+  id?: string;
+  username?: string;
+  personal_hash?: string;
+}
+
+export async function getRotationHashes(apiKey: string): Promise<Record<string, string>> {
+  // personal_hash is only present in the JSON-LD representation — asking for
+  // plain application/json (what request() does) returns accounts without it.
+  const url = `${BASE_URL}/api/proxy_accounts?itemsPerPage=200`;
+  const httpRes = await fetch(url, {
+    headers: { "api-key": apiKey, Accept: "application/ld+json" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!httpRes.ok) {
+    throw new AnyIPError(httpRes.status, `Could not load rotation links — HTTP ${httpRes.status}`);
+  }
+  const res = (await httpRes.json()) as { "hydra:member"?: LegacyAccount[] };
+
+  const byUsername: Record<string, string> = {};
+  for (const account of res["hydra:member"] ?? []) {
+    if (account.username && account.personal_hash) {
+      byUsername[account.username] = account.personal_hash;
+    }
+  }
+  return byUsername;
+}
+
+export interface RotateResult {
+  success?: boolean;
+  message?: string;
+  user_id?: string;
+  session?: string;
+}
+
+export function rotationUrl(personalHash: string, sessionName: string): string {
+  return `${BASE_URL}/api/invalidate/${encodeURIComponent(personalHash)}/${encodeURIComponent(sessionName)}`;
+}
+
+export async function rotateSession(
+  personalHash: string,
+  sessionName: string
+): Promise<RotateResult> {
+  const res = await fetch(rotationUrl(personalHash, sessionName), {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  const text = await res.text();
+  let parsed: RotateResult = {};
+  try { parsed = JSON.parse(text) as RotateResult; } catch { /* non-JSON body */ }
+  if (!res.ok) throw new AnyIPError(res.status, parsed.message ?? text ?? `HTTP ${res.status}`, parsed);
+  return parsed;
+}
 
 export async function listProxies(
   apiKey: string,

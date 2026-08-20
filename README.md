@@ -383,8 +383,31 @@ Press `Ctrl+C` to stop.
 - 💾 **Saved sessions** — your locally stored proxies load automatically on startup
 - 📋 Proxy account table with enable/disable toggles
 - ➕ New proxy creation form (HTTP or SOCKS5, sticky or rotating, by country)
+- 🔄 **Change IP** — rotate any sticky session from its row (see below)
+- ⚙️ **Settings** — API keys and dashboard colours, next to *+ New Proxy*
 - 📈 Stats breakdown by network type, connection type, and location
 - 📋 Copy / export proxy strings in any format
+
+### Settings
+
+The gear button beside *+ New Proxy* opens a modal with two sections:
+
+- **API keys** — store or replace the anyIP and Anthropic keys without leaving the
+  dashboard. Only the last four characters are ever sent back to the browser; leave
+  a field blank to keep the current key, or use the trash button to forget one. A key
+  supplied through `ANYIP_API_KEY` / `ANTHROPIC_API_KEY` is shown as such and still
+  wins over anything saved here.
+- **Appearance** — primary colour, tint and hover shade, with presets and a live
+  preview. Tint and hover are derived from the primary until you set them by hand.
+  The palette is stored in the same config file as the keys and is inlined into the
+  page on load, so a customised dashboard paints correctly on the first frame.
+
+### Change IP (rotation)
+
+Each sticky row has a 🔄 button that calls the account's
+[rotation link](https://anyip.io/docs/guides/sessions-and-rotation), so the next
+connection on that session gets a fresh IP. Rows that already rotate on every
+connection show the button disabled — there is no sticky IP to change.
 
 ---
 

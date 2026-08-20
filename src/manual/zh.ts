@@ -179,6 +179,8 @@ Claude 密钥为可选项，仅在使用 \`anyip generate\` 和非英文 \`anyip
 - AI 代理生成表单
 - 流量概览
 - 会话查看器
+- 每个 sticky 会话行的换 IP 按钮（轮换链接）
+- 设置（+ New Proxy 旁的齿轮）：API 密钥与界面配色
 
 ---
 

@@ -60,6 +60,17 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
 .manual-body pre code { background: none; padding: 0; color: #2d2d2d; }
 .manual-body ul { padding-left: 1.25rem; }
 .manual-body a { color: var(--brand); }
+
+.settings-section { font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
+  color: #6c757d; font-weight: 700; }
+.color-field { display: flex; align-items: center; gap: .5rem; }
+.color-field input[type=color] { width: 46px; height: 38px; padding: 2px;
+  border: 1px solid #dee2e6; border-radius: 6px; background: #fff; cursor: pointer; }
+.color-field input[type=text] { max-width: 130px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.preset { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; padding: 0; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.preset:hover, .preset.active { border-color: #212529; }
+.theme-preview { border: 1px solid #e9ecef; border-radius: 10px; padding: 14px; background: #fff; }
 </style>
 </head>
 <body>
@@ -75,6 +86,10 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
       </span>
       <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newProxyModal">
         <i class="bi bi-plus-lg"></i> New Proxy
+      </button>
+      <button class="btn btn-outline-primary btn-sm" id="settingsBtn" title="Settings"
+        data-bs-toggle="modal" data-bs-target="#settingsModal" aria-label="Settings">
+        <i class="bi bi-gear"></i>
       </button>
     </div>
   </div>
@@ -375,6 +390,124 @@ body { background: #f7f7fa; font-family: -apple-system, BlinkMacSystemFont, "Seg
   </div>
 </div>
 
+<!-- Settings -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-gear text-primary me-1"></i> Settings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="settings-section mb-3">API keys</div>
+
+        <div class="row mb-3 align-items-start">
+          <label class="col-sm-3 col-form-label" for="anyipKeyInput">anyIP API key :</label>
+          <div class="col-sm-9">
+            <div class="input-group">
+              <input type="password" class="form-control" id="anyipKeyInput" autocomplete="off"
+                spellcheck="false" placeholder="Not set" />
+              <button class="btn btn-outline-secondary" type="button" data-reveal="anyipKeyInput"
+                title="Show / hide"><i class="bi bi-eye"></i></button>
+              <button class="btn btn-outline-danger" type="button" data-clear="anyipKey"
+                title="Forget this key"><i class="bi bi-trash"></i></button>
+            </div>
+            <div class="form-text" id="anyipKeyHint"></div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-start">
+          <label class="col-sm-3 col-form-label" for="claudeKeyInput">Anthropic key :</label>
+          <div class="col-sm-9">
+            <div class="input-group">
+              <input type="password" class="form-control" id="claudeKeyInput" autocomplete="off"
+                spellcheck="false" placeholder="Not set" />
+              <button class="btn btn-outline-secondary" type="button" data-reveal="claudeKeyInput"
+                title="Show / hide"><i class="bi bi-eye"></i></button>
+              <button class="btn btn-outline-danger" type="button" data-clear="claudeKey"
+                title="Forget this key"><i class="bi bi-trash"></i></button>
+            </div>
+            <div class="form-text" id="claudeKeyHint"></div>
+          </div>
+        </div>
+
+        <hr class="my-4" />
+
+        <div class="settings-section mb-3">Appearance</div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label">Presets :</label>
+          <div class="col-sm-9 d-flex flex-wrap gap-2" id="themePresets"></div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label" for="themeBrand">Primary :</label>
+          <div class="col-sm-9">
+            <div class="color-field">
+              <input type="color" id="themeBrand" value="#5c0fba" />
+              <input type="text" class="form-control" id="themeBrandHex" maxlength="7" spellcheck="false" />
+              <span class="form-text ms-1">Buttons, links, active tabs</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label" for="themeBrandLight">Tint :</label>
+          <div class="col-sm-9">
+            <div class="color-field">
+              <input type="color" id="themeBrandLight" value="#f3ecfb" />
+              <input type="text" class="form-control" id="themeBrandLightHex" maxlength="7" spellcheck="false" />
+              <span class="form-text ms-1">Badges, code blocks</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+          <label class="col-sm-3 col-form-label" for="themeBrandDark">Hover :</label>
+          <div class="col-sm-9">
+            <div class="color-field">
+              <input type="color" id="themeBrandDark" value="#430b87" />
+              <input type="text" class="form-control" id="themeBrandDarkHex" maxlength="7" spellcheck="false" />
+              <span class="form-text ms-1">Pressed / hover states</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-2">
+          <div class="col-sm-9 offset-sm-3">
+            <div class="theme-preview d-flex align-items-center flex-wrap gap-2">
+              <button type="button" class="btn btn-primary btn-sm">Primary</button>
+              <button type="button" class="btn btn-outline-primary btn-sm">Outline</button>
+              <span class="badge badge-soft">badge</span>
+              <span class="text-primary fw-semibold">link</span>
+              <span class="form-text ms-auto">Tint and hover follow the primary unless you set them.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-9 offset-sm-3">
+            <button type="button" class="btn btn-link btn-sm px-0" id="themeResetBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset to anyIP purple
+            </button>
+          </div>
+        </div>
+
+        <div id="settingsAlert" class="alert alert-danger mt-3" hidden></div>
+
+      </div>
+      <div class="modal-footer">
+        <span class="text-muted small me-auto text-truncate" id="settingsPath" style="max-width:55%"></span>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="settingsSaveBtn">
+          <i class="bi bi-check-lg"></i> Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
   <div id="appToast" class="toast align-items-center border-0" role="alert">
@@ -405,7 +538,10 @@ var COUNTRIES = [
   ['RO','Romania'],['HU','Hungary'],['CO','Colombia'],['PE','Peru'],
 ];
 
-var state = { sessions: null, user: null, accountsLoaded: false, manualLoaded: false };
+var state = {
+  sessions: null, user: null, accountsLoaded: false, manualLoaded: false,
+  settings: null, themeTouched: {}, clearKeys: { anyipKey:false, claudeKey:false },
+};
 
 /* ── Utils ──────────────────────────────────────────────────────────────────── */
 function esc(s) {
@@ -673,6 +809,9 @@ function renderProxies(list) {
       '<td><code>'+esc(str)+'</code></td>' +
       '<td><span class="text-muted small" title="'+esc(s.createdAt||'')+'">'+timeAgo(s.createdAt)+'</span></td>' +
       '<td class="text-end pe-3">' +
+        (s.rotating
+          ? '<button class="btn btn-sm btn-outline-secondary me-1" disabled title="This proxy already gets a new IP on every connection"><i class="bi bi-arrow-repeat"></i></button>'
+          : '<button class="btn btn-sm btn-outline-primary me-1 rotate-row" data-n="'+esc(s.name)+'" title="Change IP — rotate this sticky session"><i class="bi bi-arrow-repeat"></i></button>') +
         '<button class="btn btn-sm btn-outline-primary me-1 copy-row" data-v="'+esc(str)+'" title="Copy"><i class="bi bi-clipboard"></i></button>' +
         '<button class="btn btn-sm btn-outline-danger del-row" data-n="'+esc(s.name)+'" title="Delete"><i class="bi bi-trash"></i></button>' +
       '</td></tr>';
@@ -683,6 +822,22 @@ function renderProxies(list) {
       navigator.clipboard.writeText(btn.dataset.v)
         .then(function(){toast('Copied','success');})
         .catch(function(){toast('Copy failed','danger');});
+    });
+  });
+  tbody.querySelectorAll('.rotate-row').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var n = btn.dataset.n;
+      var icon = btn.querySelector('i');
+      btn.disabled = true;
+      icon.className = 'spinner-border spinner-border-sm';
+      apiPost('/api/sessions/'+encodeURIComponent(n)+'/rotate', {}).then(function(r){
+        toast(r.message || ('New IP requested for "'+n+'"'), 'success');
+      }).catch(function(e){
+        toast('Rotate failed: '+e, 'danger');
+      }).then(function(){
+        btn.disabled = false;
+        icon.className = 'bi bi-arrow-repeat';
+      });
     });
   });
   tbody.querySelectorAll('.del-row').forEach(function(btn){
@@ -950,13 +1105,233 @@ function handleGenerate() {
   });
 }
 
+
+/* ── Settings ───────────────────────────────────────────────────────────────── */
+var THEME_PRESETS = [
+  ['anyIP purple','#5c0fba'], ['Ocean','#0d6efd'], ['Emerald','#198754'],
+  ['Sunset','#e8590c'], ['Rose','#d63384'], ['Slate','#343a40'],
+];
+var THEME_FIELDS = ['brand','brandLight','brandDark'];
+var THEME_IDS = { brand:'themeBrand', brandLight:'themeBrandLight', brandDark:'themeBrandDark' };
+
+function hexToRgb(hex) {
+  var h = hex.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function rgbToHex(rgb) {
+  return '#' + rgb.map(function(v){
+    return Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');
+  }).join('');
+}
+/* Blend `hex` toward `target` — how the tint and hover shades are derived. */
+function mixHex(hex, target, amount) {
+  var a = hexToRgb(hex), b = hexToRgb(target);
+  return rgbToHex(a.map(function(v,i){ return v + (b[i]-v) * amount; }));
+}
+function deriveTheme(brand) {
+  return { brand: brand, brandLight: mixHex(brand,'#ffffff',.92), brandDark: mixHex(brand,'#000000',.28) };
+}
+function isHex(v) { return /^#[0-9a-fA-F]{6}$/.test(v); }
+
+function applyTheme(theme) {
+  var root = document.documentElement.style;
+  root.setProperty('--brand', theme.brand);
+  root.setProperty('--brand-light', theme.brandLight);
+  root.setProperty('--brand-dark', theme.brandDark);
+  root.setProperty('--bs-primary', theme.brand);
+  root.setProperty('--bs-primary-rgb', hexToRgb(theme.brand).join(','));
+}
+
+function themeFromInputs() {
+  var t = {};
+  THEME_FIELDS.forEach(function(f){ t[f] = document.getElementById(THEME_IDS[f]).value.toLowerCase(); });
+  return t;
+}
+function setThemeInputs(theme) {
+  THEME_FIELDS.forEach(function(f){
+    document.getElementById(THEME_IDS[f]).value = theme[f];
+    document.getElementById(THEME_IDS[f]+'Hex').value = theme[f];
+  });
+  markActivePreset(theme.brand);
+}
+function markActivePreset(brand) {
+  Array.prototype.forEach.call(document.querySelectorAll('#themePresets .preset'), function(b){
+    b.classList.toggle('active', b.dataset.color === brand.toLowerCase());
+  });
+}
+
+function keyHint(el, info, cleared) {
+  // The placeholder must not read "Not set" while a key is stored.
+  var input = document.getElementById(el.id.replace('Hint','Input'));
+  if (input) input.placeholder = cleared ? 'Removed on save' : (info.set ? info.masked : 'Not set');
+  if (cleared) { el.innerHTML = '<span class="text-danger">Will be removed when you save.</span>'; return; }
+  if (info.source === 'env') {
+    el.innerHTML = 'Set via environment variable — <code>' + esc(info.masked) + '</code>. ' +
+      'The env var wins over anything saved here.';
+  } else if (info.set) {
+    el.innerHTML = 'Saved as <code>' + esc(info.masked) + '</code>. Leave blank to keep it.';
+  } else {
+    el.textContent = 'Not set.';
+  }
+}
+
+function renderSettings() {
+  var s = state.settings;
+  if (!s) return;
+  keyHint(document.getElementById('anyipKeyHint'), s.anyipKey, state.clearKeys.anyipKey);
+  keyHint(document.getElementById('claudeKeyHint'), s.claudeKey, state.clearKeys.claudeKey);
+  document.getElementById('settingsPath').textContent = s.configPath || '';
+  setThemeInputs(s.theme);
+}
+
+function loadSettings(force) {
+  if (!force && state.settings) return Promise.resolve(state.settings);
+  return apiGet('/api/settings').then(function(s){ state.settings = s; return s; });
+}
+
+function initSettings() {
+  var presets = document.getElementById('themePresets');
+  THEME_PRESETS.forEach(function(p){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'preset'; b.title = p[0];
+    b.dataset.color = p[1]; b.style.background = p[1];
+    b.addEventListener('click', function(){
+      var t = deriveTheme(p[1]);
+      state.themeTouched = {};
+      setThemeInputs(t); applyTheme(t);
+    });
+    presets.appendChild(b);
+  });
+
+  THEME_FIELDS.forEach(function(f){
+    var color = document.getElementById(THEME_IDS[f]);
+    var hex = document.getElementById(THEME_IDS[f]+'Hex');
+
+    color.addEventListener('input', function(){
+      hex.value = color.value;
+      onThemeEdit(f);
+    });
+    hex.addEventListener('input', function(){
+      var v = hex.value.trim();
+      if (v.charAt(0) !== '#') { v = '#' + v; }
+      if (!isHex(v)) return;              // let them finish typing
+      color.value = v.toLowerCase();
+      onThemeEdit(f);
+    });
+    hex.addEventListener('blur', function(){ hex.value = color.value; });
+  });
+
+  document.getElementById('themeResetBtn').addEventListener('click', function(){
+    var d = (state.settings && state.settings.defaultTheme) || deriveTheme('#5c0fba');
+    state.themeTouched = {};
+    setThemeInputs(d); applyTheme(d);
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-reveal]'), function(btn){
+    btn.addEventListener('click', function(){
+      var input = document.getElementById(btn.dataset.reveal);
+      var hidden = input.type === 'password';
+      input.type = hidden ? 'text' : 'password';
+      btn.innerHTML = '<i class="bi bi-eye' + (hidden ? '-slash' : '') + '"></i>';
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-clear]'), function(btn){
+    btn.addEventListener('click', function(){
+      var field = btn.dataset.clear;
+      state.clearKeys[field] = !state.clearKeys[field];
+      btn.classList.toggle('btn-danger', state.clearKeys[field]);
+      btn.classList.toggle('btn-outline-danger', !state.clearKeys[field]);
+      document.getElementById(field + 'Input').value = '';
+      renderSettings();
+    });
+  });
+
+  document.getElementById('settingsModal').addEventListener('show.bs.modal', function(){
+    document.getElementById('settingsAlert').hidden = true;
+    loadSettings(true).then(renderSettings).catch(function(e){
+      var a = document.getElementById('settingsAlert');
+      a.hidden = false; a.textContent = 'Could not load settings: ' + e;
+    });
+  });
+
+  // Leaving without saving must not keep a half-picked palette on screen.
+  document.getElementById('settingsModal').addEventListener('hidden.bs.modal', function(){
+    if (state.settings) applyTheme(state.settings.theme);
+    state.themeTouched = {};
+  });
+
+  document.getElementById('settingsSaveBtn').addEventListener('click', saveSettings);
+}
+
+/* Tint and hover shades follow the primary until they are edited by hand. */
+function onThemeEdit(field) {
+  if (field !== 'brand') state.themeTouched[field] = true;
+  var t = themeFromInputs();
+  if (field === 'brand') {
+    var derived = deriveTheme(t.brand);
+    ['brandLight','brandDark'].forEach(function(f){
+      if (!state.themeTouched[f]) t[f] = derived[f];
+    });
+    setThemeInputs(t);
+  } else {
+    markActivePreset(t.brand);
+  }
+  applyTheme(t);
+}
+
+function saveSettings() {
+  var btn = document.getElementById('settingsSaveBtn');
+  var alertEl = document.getElementById('settingsAlert');
+  var anyipInput = document.getElementById('anyipKeyInput').value.trim();
+  var claudeInput = document.getElementById('claudeKeyInput').value.trim();
+  var body = { theme: themeFromInputs() };
+
+  // Blank means "leave as is"; the trash button is what removes a key.
+  if (state.clearKeys.anyipKey) body.anyipKey = '';
+  else if (anyipInput) body.anyipKey = anyipInput;
+  if (state.clearKeys.claudeKey) body.claudeKey = '';
+  else if (claudeInput) body.claudeKey = claudeInput;
+
+  var keyChanged = body.anyipKey !== undefined;
+  alertEl.hidden = true;
+  btn.disabled = true;
+
+  apiPut('/api/settings', body).then(function(s){
+    state.settings = s;
+    state.clearKeys = { anyipKey:false, claudeKey:false };
+    state.themeTouched = {};
+    document.getElementById('anyipKeyInput').value = '';
+    document.getElementById('claudeKeyInput').value = '';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-clear]'), function(b){
+      b.classList.add('btn-outline-danger'); b.classList.remove('btn-danger');
+    });
+    applyTheme(s.theme);
+    renderSettings();
+    bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    toast('Settings saved', 'success');
+
+    if (keyChanged) {
+      state.user = null;
+      initNavbar();
+      if (state.accountsLoaded) renderAccountTab();
+    }
+  }).catch(function(e){
+    alertEl.hidden = false;
+    alertEl.textContent = 'Could not save: ' + e;
+  }).then(function(){ btn.disabled = false; });
+}
+
 /* ── Boot ───────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded',function(){
   wireToggles();
   initProxiesTab();
   initManualTab();
   initModal();
+  initSettings();
   initNavbar();
+
+  loadSettings().then(function(s){ applyTheme(s.theme); }).catch(function(){ /* keep defaults */ });
 
   document.getElementById('accountTabBtn').addEventListener('shown.bs.tab',function(){
     if(!state.accountsLoaded){ state.accountsLoaded=true; renderAccountTab(); }
